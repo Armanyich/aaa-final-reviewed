@@ -24,6 +24,7 @@ class LighttpdEffectiveDirective:
     scope: str  # "global" or "conditional"
     condition: LighttpdCondition | None
     source: LighttpdSourceSpan
+    conditions: tuple[LighttpdCondition | None, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,9 +38,13 @@ class LighttpdConditionalScope:
     conditions: tuple[LighttpdCondition | None, ...] = ()
     # True when this scope is an ``else`` block.
     is_else: bool = False
+    # True when this scope is an ``else if``/``elseif``/``elsif`` branch.
+    is_else_if: bool = False
     # Index of the sibling if-scope that this else belongs to (within
     # conditional_scopes list).  -1 when not an else block.
     sibling_if_index: int = -1
+    # All previous branches in the same if/elseif/else chain.
+    previous_branch_indices: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,17 +79,28 @@ def _collect_nodes(
     global_directives: dict[str, LighttpdEffectiveDirective],
     conditional_scopes: list[LighttpdConditionalScope],
 ) -> None:
-    last_if_index: int = -1
+    branch_chain: list[int] = []
     for node in nodes:
         if isinstance(node, LighttpdAssignmentNode):
-            _apply_assignment(node, global_directives, scope="global", condition=None)
+            _apply_assignment(
+                node,
+                global_directives,
+                scope="global",
+                condition=None,
+                conditions=(),
+            )
+            branch_chain = []
         elif isinstance(node, LighttpdBlockNode):
-            last_if_index = _collect_block(
+            previous_branch_indices = (
+                tuple(branch_chain) if node.branch_kind in {"else", "else_if"} else ()
+            )
+            my_index = _collect_block(
                 node,
                 conditional_scopes,
                 parent_conditions=(),
-                last_sibling_if_index=last_if_index,
+                previous_branch_indices=previous_branch_indices,
             )
+            branch_chain = _next_branch_chain(branch_chain, node.branch_kind, my_index)
 
 
 def _collect_block(
@@ -92,7 +108,7 @@ def _collect_block(
     conditional_scopes: list[LighttpdConditionalScope],
     *,
     parent_conditions: tuple[LighttpdCondition | None, ...],
-    last_sibling_if_index: int,
+    previous_branch_indices: tuple[int, ...],
 ) -> int:
     """Create a scope for this block's direct assignments, then recurse for nested blocks.
 
@@ -102,10 +118,11 @@ def _collect_block(
     scope_directives: dict[str, LighttpdEffectiveDirective] = {}
 
     conditions = (*parent_conditions, block.condition)
-    is_else = block.condition is None and block.header.strip().lower() == "else"
+    is_else = block.branch_kind == "else"
+    is_else_if = block.branch_kind == "else_if"
 
     # Collect nested blocks — they inherit this block's full condition chain.
-    nested_last_if: int = -1
+    nested_branch_chain: list[int] = []
     for child in block.children:
         if isinstance(child, LighttpdAssignmentNode):
             _apply_assignment(
@@ -113,13 +130,25 @@ def _collect_block(
                 scope_directives,
                 scope="conditional",
                 condition=block.condition,
+                conditions=conditions,
             )
+            nested_branch_chain = []
         elif isinstance(child, LighttpdBlockNode):
-            nested_last_if = _collect_block(
+            nested_previous_branch_indices = (
+                tuple(nested_branch_chain)
+                if child.branch_kind in {"else", "else_if"}
+                else ()
+            )
+            nested_index = _collect_block(
                 child,
                 conditional_scopes,
                 parent_conditions=conditions,
-                last_sibling_if_index=nested_last_if,
+                previous_branch_indices=nested_previous_branch_indices,
+            )
+            nested_branch_chain = _next_branch_chain(
+                nested_branch_chain,
+                child.branch_kind,
+                nested_index,
             )
 
     my_index = len(conditional_scopes)
@@ -130,10 +159,26 @@ def _collect_block(
             directives=scope_directives,
             conditions=conditions,
             is_else=is_else,
-            sibling_if_index=last_sibling_if_index if is_else else -1,
+            is_else_if=is_else_if,
+            sibling_if_index=previous_branch_indices[-1]
+            if (is_else or is_else_if) and previous_branch_indices
+            else -1,
+            previous_branch_indices=previous_branch_indices,
         )
     )
     return my_index
+
+
+def _next_branch_chain(
+    branch_chain: list[int],
+    branch_kind: str,
+    my_index: int,
+) -> list[int]:
+    if branch_kind == "if":
+        return [my_index]
+    if branch_kind == "else_if":
+        return [*branch_chain, my_index]
+    return []
 
 
 def _apply_assignment(
@@ -142,6 +187,7 @@ def _apply_assignment(
     *,
     scope: str,
     condition: LighttpdCondition | None,
+    conditions: tuple[LighttpdCondition | None, ...],
 ) -> None:
     effective = LighttpdEffectiveDirective(
         name=node.name,
@@ -150,6 +196,7 @@ def _apply_assignment(
         scope=scope,
         condition=condition,
         source=node.source,
+        conditions=conditions,
     )
 
     if node.operator == "+=" and node.name in directives:
@@ -162,6 +209,7 @@ def _apply_assignment(
             scope=scope,
             condition=condition,
             source=node.source,
+            conditions=conditions,
         )
 
     # "=" and ":=" both use last-wins.
@@ -247,7 +295,15 @@ def merge_conditional_scopes(
         for name, directive in scope.directives.items():
             if directive.operator == "+=" and name in merged:
                 prev = merged[name]
-                merged_value = _merge_append(prev.value, directive.value)
+                base = effective_config.global_directives.get(name)
+                if context is None and not _append_scope_compatible(prev, directive):
+                    merged_value = (
+                        _merge_append(base.value, directive.value)
+                        if base is not None
+                        else directive.value
+                    )
+                else:
+                    merged_value = _merge_append(prev.value, directive.value)
                 merged[name] = LighttpdEffectiveDirective(
                     name=name,
                     value=merged_value,
@@ -255,11 +311,31 @@ def merge_conditional_scopes(
                     scope="merged",
                     condition=directive.condition,
                     source=directive.source,
+                    conditions=directive.conditions,
                 )
             else:
                 merged[name] = directive
 
     return merged
+
+
+def _append_scope_compatible(
+    previous: LighttpdEffectiveDirective,
+    current: LighttpdEffectiveDirective,
+) -> bool:
+    if not previous.conditions or not current.conditions:
+        return True
+    return _is_condition_prefix(previous.conditions, current.conditions) or _is_condition_prefix(
+        current.conditions,
+        previous.conditions,
+    )
+
+
+def _is_condition_prefix(
+    maybe_prefix: tuple[LighttpdCondition | None, ...],
+    chain: tuple[LighttpdCondition | None, ...],
+) -> bool:
+    return len(maybe_prefix) <= len(chain) and chain[: len(maybe_prefix)] == maybe_prefix
 
 
 def _scope_matches(
@@ -272,8 +348,11 @@ def _scope_matches(
     # matched (i.e. all its conditions evaluated to True, not just
     # "potentially matching").  In worst-case (no context) both if and
     # else branches must be included.
-    if scope.is_else and scope.sibling_if_index >= 0:
-        if scope_deterministic[scope.sibling_if_index]:
+    branch_indices = scope.previous_branch_indices
+    if not branch_indices and scope.is_else and scope.sibling_if_index >= 0:
+        branch_indices = (scope.sibling_if_index,)
+    if (scope.is_else or scope.is_else_if) and branch_indices:
+        if any(scope_deterministic[index] for index in branch_indices):
             return False
 
     # Check the full condition chain (all ancestors + own condition).

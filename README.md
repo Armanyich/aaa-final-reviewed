@@ -89,7 +89,8 @@ What each analyzer handles:
   `AllowOverride` filtering, per-`VirtualHost` analysis contexts,
   `Location` and `LocationMatch` layering, header merge semantics.
 - **Lighttpd** — variable expansion, `include` resolution,
-  `include_shell` handling (skipped with a warning by default),
+  `include_shell` handling (skipped with a warning by default, with
+  explicit opt-in execution via `--execute-shell`),
   conditional blocks such as `$HTTP["host"] == "..."`, optional
   per-host targeted analysis via `--host`.
 - **IIS** — safe XML parsing through `defusedxml`, three-level

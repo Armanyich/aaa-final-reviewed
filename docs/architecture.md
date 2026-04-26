@@ -153,8 +153,10 @@ The Apache analyzer handles both:
   scopes separate.
 - Targeted analysis can take a request-like context, for example a
   specific `host`, into account.
-- `include_shell` is safe by default: skipped with a warning;
-  explicit execution is opt-in.
+- `include_shell` is safe by default: skipped with a warning.
+  This intentionally differs from real lighttpd startup behavior,
+  which executes `include_shell`; explicit execution is opt-in via
+  `--execute-shell`.
 
 ### 6.4 Microsoft IIS
 
