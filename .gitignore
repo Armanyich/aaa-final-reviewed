@@ -21,6 +21,3 @@ src/*.egg-info/
 # Office documents and temp files
 /*.docx
 /~$*.docx
-
-# Local thesis / report drafts
-/prediploma_report_*
