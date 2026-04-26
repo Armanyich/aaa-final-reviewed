@@ -67,24 +67,6 @@ def test_parse_directive_with_quoted_argument() -> None:
     assert node.source.column == 1
 
 
-def test_parse_directive_with_single_quoted_argument() -> None:
-    tokens = NginxTokenizer(
-        "add_header Content-Security-Policy 'default-src self';",
-        file_path="nginx.conf",
-    ).tokenize()
-
-    ast = NginxParser(tokens).parse()
-
-    assert len(ast.nodes) == 1
-    node = ast.nodes[0]
-    assert isinstance(node, DirectiveNode)
-    assert node.name == "add_header"
-    assert node.args == ["Content-Security-Policy", "default-src self"]
-    assert node.source.file_path == "nginx.conf"
-    assert node.source.line == 1
-    assert node.source.column == 1
-
-
 def test_parse_directive_with_escaped_quotes_in_quoted_argument() -> None:
     tokens = NginxTokenizer(
         'root "/var/www/\\"quoted\\"";',

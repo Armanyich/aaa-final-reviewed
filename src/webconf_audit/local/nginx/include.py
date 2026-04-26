@@ -231,7 +231,6 @@ def _parse_include_file(
                     kind="file",
                     file_path=exc.file_path or str(include_path),
                     line=exc.line,
-                    column=exc.column,
                 ),
             )
         )
