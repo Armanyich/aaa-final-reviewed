@@ -18,13 +18,6 @@ src/*.egg-info/
 /.lab/
 /demo/local_admin/reports/
 
-# Local agent / MCP configuration
-.claude/*
-.claude/settings.local.json
-.claude/worktrees/
-.mcp.json
-.mcp.local.json
-
 # Office documents and temp files
 /*.docx
 /~$*.docx
