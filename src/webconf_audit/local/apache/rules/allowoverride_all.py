@@ -39,23 +39,41 @@ def find_allowoverride_all(config_ast: ApacheConfigAst) -> list[Finding]:
     directory_blocks = _iter_directory_blocks(config_ast.nodes)
 
     for block in directory_blocks:
-        direct_allowed = extract_allowoverride(block)
+        # Apache merges <Directory> declarations at the same resolved path
+        # last-wins; the rule must reflect that effective scope rather than
+        # this block's own AllowOverride directive in isolation.
+        winner = _same_path_allowoverride_winner(block, directory_blocks)
+        direct_allowed = extract_allowoverride(winner) if winner is not None else None
         effective_allowed = _find_effective_allowoverride(block, directory_blocks)
 
         if direct_allowed == ALL_OVERRIDE_CATEGORIES:
-            findings.append(
-                _make_finding(
-                    block,
-                    description=(
-                        "'AllowOverride All' allows .htaccess files to "
-                        "override any directive in this Directory scope. "
-                        "This weakens centralized configuration control."
-                    ),
+            # Emit on the block whose AllowOverride directive actually wins
+            # the same-path merge so repeated declarations collapse to one
+            # finding pointed at the directive that matters.
+            if winner is block:
+                findings.append(
+                    _make_finding(
+                        block,
+                        description=(
+                            "'AllowOverride All' allows .htaccess files to "
+                            "override any directive in this Directory scope. "
+                            "This weakens centralized configuration control."
+                        ),
+                    )
                 )
-            )
             continue
 
-        if direct_allowed is None and effective_allowed is None:
+        # A restrictive AllowOverride won the same-path merge — no finding.
+        if direct_allowed is not None:
+            continue
+
+        # No same-path declaration sets AllowOverride. Emit case 2/3 only on
+        # the earliest block at this path so repeated silent declarations
+        # do not produce duplicate findings.
+        if not _is_first_at_same_path(block, directory_blocks):
+            continue
+
+        if effective_allowed is None:
             findings.append(
                 _make_finding(
                     block,
@@ -69,7 +87,7 @@ def find_allowoverride_all(config_ast: ApacheConfigAst) -> list[Finding]:
             )
             continue
 
-        if direct_allowed is None and effective_allowed == ALL_OVERRIDE_CATEGORIES:
+        if effective_allowed == ALL_OVERRIDE_CATEGORIES:
             findings.append(
                 _make_finding(
                     block,
@@ -117,6 +135,43 @@ def _iter_directory_blocks(
     return blocks
 
 
+def _same_path_allowoverride_winner(
+    block: ApacheBlockNode,
+    all_blocks: list[ApacheBlockNode],
+) -> ApacheBlockNode | None:
+    block_path = _resolve_block_path(block)
+    if block_path is None:
+        return block if extract_allowoverride(block) is not None else None
+
+    winner: ApacheBlockNode | None = None
+    for candidate in all_blocks:
+        candidate_path = _resolve_block_path(candidate)
+        if candidate_path != block_path:
+            continue
+        if extract_allowoverride(candidate) is None:
+            continue
+        winner = candidate
+
+    return winner
+
+
+def _is_first_at_same_path(
+    block: ApacheBlockNode,
+    all_blocks: list[ApacheBlockNode],
+) -> bool:
+    block_path = _resolve_block_path(block)
+    if block_path is None:
+        return True
+
+    for candidate in all_blocks:
+        if candidate is block:
+            return True
+        if _resolve_block_path(candidate) == block_path:
+            return False
+
+    return True
+
+
 def _find_effective_allowoverride(
     block: ApacheBlockNode,
     all_blocks: list[ApacheBlockNode],
@@ -127,8 +182,18 @@ def _find_effective_allowoverride(
 
     best_match: tuple[int, frozenset[str]] | None = None
     for candidate in all_blocks:
+        if candidate is block:
+            continue
+
         candidate_path = _resolve_block_path(candidate)
         if candidate_path is None:
+            continue
+
+        # Inherited override only: a peer block declared at the same
+        # resolved path is the same Apache scope (last-wins merge), not a
+        # covering parent. Skip both self and same-path peers so a block's
+        # own scope cannot mask a real covering parent.
+        if candidate_path == block_path:
             continue
 
         allowed = extract_allowoverride(candidate)
@@ -139,7 +204,7 @@ def _find_effective_allowoverride(
             continue
 
         specificity = path_match_specificity(candidate_path)
-        if best_match is None or specificity > best_match[0]:
+        if best_match is None or specificity >= best_match[0]:
             best_match = (specificity, allowed)
 
     return best_match[1] if best_match is not None else None

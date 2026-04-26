@@ -3505,6 +3505,223 @@ class TestAllowOverrideAllRule:
         ids = [f.rule_id for f in result.findings]
         assert "apache.allowoverride_all_in_directory" not in ids
 
+    def test_find_effective_allowoverride_excludes_self(self) -> None:
+        from webconf_audit.local.apache.rules.allowoverride_all import (
+            _find_effective_allowoverride,
+            _iter_directory_blocks,
+        )
+
+        ast = parse_apache_config(
+            '<Directory "/var/www/restricted">\n'
+            "    AllowOverride FileInfo\n"
+            "</Directory>\n",
+            file_path="/etc/httpd/httpd.conf",
+        )
+        blocks = _iter_directory_blocks(ast.nodes)
+        assert len(blocks) == 1
+
+        effective = _find_effective_allowoverride(blocks[0], blocks)
+
+        assert effective is None
+
+    def test_find_effective_allowoverride_returns_parent_not_self(self) -> None:
+        from webconf_audit.local.apache.rules.allowoverride_all import (
+            _find_effective_allowoverride,
+            _iter_directory_blocks,
+        )
+
+        ast = parse_apache_config(
+            '<Directory "/var/www">\n'
+            "    AllowOverride All\n"
+            "</Directory>\n"
+            '<Directory "/var/www/restricted">\n'
+            "    AllowOverride FileInfo\n"
+            "</Directory>\n",
+            file_path="/etc/httpd/httpd.conf",
+        )
+        blocks = _iter_directory_blocks(ast.nodes)
+        assert len(blocks) == 2
+        child_block = next(b for b in blocks if b.args[0].endswith("restricted"))
+
+        effective = _find_effective_allowoverride(child_block, blocks)
+
+        assert effective == ALL_OVERRIDE_CATEGORIES
+
+    def test_find_effective_allowoverride_skips_same_path_peer(self) -> None:
+        from webconf_audit.local.apache.rules.allowoverride_all import (
+            _find_effective_allowoverride,
+            _iter_directory_blocks,
+        )
+
+        ast = parse_apache_config(
+            '<Directory "/var/www">\n'
+            "    AllowOverride None\n"
+            "</Directory>\n"
+            '<Directory "/var/www">\n'
+            "    AllowOverride All\n"
+            "</Directory>\n",
+            file_path="/etc/httpd/httpd.conf",
+        )
+        blocks = _iter_directory_blocks(ast.nodes)
+        assert len(blocks) == 2
+
+        effective_for_first = _find_effective_allowoverride(blocks[0], blocks)
+        effective_for_second = _find_effective_allowoverride(blocks[1], blocks)
+
+        assert effective_for_first is None
+        assert effective_for_second is None
+
+    def test_find_effective_allowoverride_prefers_later_equal_parent(self) -> None:
+        from webconf_audit.local.apache.rules.allowoverride_all import (
+            _find_effective_allowoverride,
+            _iter_directory_blocks,
+        )
+
+        ast = parse_apache_config(
+            '<Directory "/var/www">\n'
+            "    AllowOverride All\n"
+            "</Directory>\n"
+            '<Directory "/var/www">\n'
+            "    AllowOverride None\n"
+            "</Directory>\n"
+            '<Directory "/var/www/restricted">\n'
+            "    Options -Indexes\n"
+            "</Directory>\n",
+            file_path="/etc/httpd/httpd.conf",
+        )
+        blocks = _iter_directory_blocks(ast.nodes)
+        assert len(blocks) == 3
+        child_block = next(b for b in blocks if b.args[0].endswith("restricted"))
+
+        effective = _find_effective_allowoverride(child_block, blocks)
+
+        assert effective == frozenset()
+
+    def test_allowoverride_all_then_none_at_same_path_does_not_fire(
+        self, tmp_path: Path
+    ) -> None:
+        config_path = tmp_path / "httpd.conf"
+        config_path.write_text(
+            _with_backup_files_restriction(
+                '<Directory "/var/www">\n'
+                "    AllowOverride All\n"
+                "</Directory>\n"
+                '<Directory "/var/www">\n'
+                "    AllowOverride None\n"
+                "</Directory>\n"
+                "ServerSignature Off\n"
+                "ServerTokens Prod\n"
+                "TraceEnable Off\n"
+                "LimitRequestBody 1048576\n"
+                "LimitRequestFields 100\n"
+                "ErrorLog logs/error_log\n"
+                "CustomLog logs/access_log combined\n"
+                'ErrorDocument 404 "/error/404.html"\n'
+                'ErrorDocument 500 "/error/500.html"\n'
+            ),
+            encoding="utf-8",
+        )
+        result = analyze_apache_config(str(config_path))
+        ids = [f.rule_id for f in result.findings]
+        assert "apache.allowoverride_all_in_directory" not in ids
+
+    def test_allowoverride_later_parent_none_suppresses_child_inheritance(
+        self, tmp_path: Path
+    ) -> None:
+        config_path = tmp_path / "httpd.conf"
+        config_path.write_text(
+            _with_backup_files_restriction(
+                '<Directory "/var/www">\n'
+                "    AllowOverride All\n"
+                "</Directory>\n"
+                '<Directory "/var/www">\n'
+                "    AllowOverride None\n"
+                "</Directory>\n"
+                '<Directory "/var/www/restricted">\n'
+                "    Options -Indexes\n"
+                "</Directory>\n"
+                "ServerSignature Off\n"
+                "ServerTokens Prod\n"
+                "TraceEnable Off\n"
+                "LimitRequestBody 1048576\n"
+                "LimitRequestFields 100\n"
+                "ErrorLog logs/error_log\n"
+                "CustomLog logs/access_log combined\n"
+                'ErrorDocument 404 "/error/404.html"\n'
+                'ErrorDocument 500 "/error/500.html"\n'
+            ),
+            encoding="utf-8",
+        )
+        result = analyze_apache_config(str(config_path))
+        ids = [f.rule_id for f in result.findings]
+        assert "apache.allowoverride_all_in_directory" not in ids
+
+    def test_allowoverride_repeated_all_at_same_path_fires_once_at_winner(
+        self, tmp_path: Path
+    ) -> None:
+        config_path = tmp_path / "httpd.conf"
+        config_path.write_text(
+            _with_backup_files_restriction(
+                '<Directory "/var/www">\n'
+                "    AllowOverride All\n"
+                "</Directory>\n"
+                '<Directory "/var/www">\n'
+                "    AllowOverride All\n"
+                "</Directory>\n"
+                "ServerSignature Off\n"
+                "ServerTokens Prod\n"
+                "TraceEnable Off\n"
+                "LimitRequestBody 1048576\n"
+                "LimitRequestFields 100\n"
+                "ErrorLog logs/error_log\n"
+                "CustomLog logs/access_log combined\n"
+                'ErrorDocument 404 "/error/404.html"\n'
+                'ErrorDocument 500 "/error/500.html"\n'
+            ),
+            encoding="utf-8",
+        )
+        result = analyze_apache_config(str(config_path))
+        ao_findings = [
+            f for f in result.findings
+            if f.rule_id == "apache.allowoverride_all_in_directory"
+        ]
+        assert len(ao_findings) == 1
+        # Finding points at the later declaration whose directive wins the merge.
+        assert ao_findings[0].location.line == 4
+
+    def test_allowoverride_repeated_no_directive_at_same_path_fires_once(
+        self, tmp_path: Path
+    ) -> None:
+        config_path = tmp_path / "httpd.conf"
+        config_path.write_text(
+            _with_backup_files_restriction(
+                '<Directory "/var/www">\n'
+                "    Options -Indexes\n"
+                "</Directory>\n"
+                '<Directory "/var/www">\n'
+                "    Options +FollowSymLinks\n"
+                "</Directory>\n"
+                "ServerSignature Off\n"
+                "ServerTokens Prod\n"
+                "TraceEnable Off\n"
+                "LimitRequestBody 1048576\n"
+                "LimitRequestFields 100\n"
+                "ErrorLog logs/error_log\n"
+                "CustomLog logs/access_log combined\n"
+                'ErrorDocument 404 "/error/404.html"\n'
+                'ErrorDocument 500 "/error/500.html"\n'
+            ),
+            encoding="utf-8",
+        )
+        result = analyze_apache_config(str(config_path))
+        ao_findings = [
+            f for f in result.findings
+            if f.rule_id == "apache.allowoverride_all_in_directory"
+        ]
+        assert len(ao_findings) == 1
+        # Finding points at the earliest declaration at the path.
+        assert ao_findings[0].location.line == 1
+
 
 class TestHtaccessSecurityDirectiveRule:
     def test_options_in_htaccess_fires(self, tmp_path: Path) -> None:

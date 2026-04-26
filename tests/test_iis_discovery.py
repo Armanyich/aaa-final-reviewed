@@ -411,6 +411,35 @@ def test_analyze_iis_config_application_host_discovers_and_merges_site_web_confi
     assert web_config_findings, "expected findings sourced from discovered web.config"
 
 
+def test_analyze_iis_config_application_host_warns_on_malformed_site_web_config(
+    tmp_path: Path,
+) -> None:
+    site_root = tmp_path / "site"
+    site_root.mkdir()
+    web_config_path = _write(site_root / "web.config", "<<<not xml at all>>>")
+    app_host_path = _write(
+        tmp_path / "applicationHost.config",
+        _application_host_config(site_root),
+    )
+
+    result = analyze_iis_config(str(app_host_path))
+
+    assert result.metadata["config_kind"] == "applicationHost"
+    assert result.metadata["sites_discovered"] == 1
+    assert result.metadata["web_configs_found"] == 1
+    assert result.metadata["inheritance_chain"][-2:] == [
+        str(app_host_path),
+        str(web_config_path),
+    ]
+    parse_issues = [issue for issue in result.issues if issue.code == "iis_parse_error"]
+    assert len(parse_issues) == 1
+    issue = parse_issues[0]
+    assert issue.level == "warning"
+    assert issue.location is not None
+    assert issue.location.file_path == str(web_config_path)
+    assert str(web_config_path) in issue.message
+
+
 def test_analyze_iis_config_application_host_with_machine_config_chain(
     tmp_path: Path,
 ) -> None:

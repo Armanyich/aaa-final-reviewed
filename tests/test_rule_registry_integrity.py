@@ -7,8 +7,12 @@ ordering.
 
 from __future__ import annotations
 
+import importlib
+import pkgutil
+
 import pytest
 
+import webconf_audit.local.iis.rules as iis_rules_package
 from webconf_audit.rule_registry import RuleRegistry
 
 
@@ -32,6 +36,19 @@ def _fresh_registry() -> RuleRegistry:
         if meta.rule_id not in reg._catalog:
             reg.register_meta(meta)
     return reg
+
+
+def test_iis_rule_modules_import_individually() -> None:
+    module_names = [
+        module_info.name
+        for module_info in pkgutil.iter_modules(iis_rules_package.__path__)
+        if not module_info.ispkg
+    ]
+
+    assert module_names
+
+    for module_name in module_names:
+        importlib.import_module(f"{iis_rules_package.__name__}.{module_name}")
 
 
 @pytest.fixture()
