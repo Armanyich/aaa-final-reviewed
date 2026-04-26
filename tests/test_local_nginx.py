@@ -76,6 +76,7 @@ def test_analyze_nginx_config_reports_unterminated_single_quoted_string(
     assert issue.location is not None
     assert issue.location.file_path == str(config_path)
     assert issue.location.line == 2
+    assert issue.location.column == 40
 
 
 # happy path / basic analysis
