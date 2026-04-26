@@ -11,6 +11,10 @@ from webconf_audit.local.apache.parser import (
     ApacheParser,
     ApacheTokenizer,
 )
+from webconf_audit.local.apache.path_matching import (
+    directory_path_covers,
+    path_match_specificity,
+)
 from webconf_audit.models import AnalysisIssue, SourceLocation
 
 DEFAULT_ACCESS_FILE_NAME = ".htaccess"
@@ -234,13 +238,13 @@ def _find_effective_allowoverride_source_block(
     best_match: tuple[int, int, ApacheBlockNode] | None = None
 
     for dir_path, block, _source_virtualhost_block, source_order in dir_block_index:
-        if not _path_is_covered_by_directory(resolved_target, dir_path):
+        if not directory_path_covers(resolved_target, dir_path, case_sensitive=False):
             continue
 
         if extract_allowoverride(block) is None:
             continue
 
-        specificity = len(_normalize_path_for_match(dir_path))
+        specificity = path_match_specificity(dir_path, case_sensitive=False)
         if (
             best_match is None
             or specificity > best_match[0]
@@ -261,10 +265,10 @@ def _find_virtualhost_for_directory(
     for dir_path, _block, source_virtualhost_block, source_order in dir_block_index:
         if source_virtualhost_block is None:
             continue
-        if not _path_is_covered_by_directory(resolved_target, dir_path):
+        if not directory_path_covers(resolved_target, dir_path, case_sensitive=False):
             continue
 
-        specificity = len(_normalize_path_for_match(dir_path))
+        specificity = path_match_specificity(dir_path, case_sensitive=False)
         if (
             best_match is None
             or specificity > best_match[0]
@@ -273,16 +277,6 @@ def _find_virtualhost_for_directory(
             best_match = (specificity, source_order, source_virtualhost_block)
 
     return best_match[2] if best_match is not None else None
-
-
-def _path_is_covered_by_directory(target_path: Path, directory_path: Path) -> bool:
-    target_str = _normalize_path_for_match(target_path)
-    dir_str = _normalize_path_for_match(directory_path)
-    return target_str == dir_str or target_str.startswith(dir_str + "/")
-
-
-def _normalize_path_for_match(path: Path) -> str:
-    return str(path).replace("\\", "/").rstrip("/").lower()
 
 
 def _extract_access_file_name(config_ast: ApacheConfigAst) -> str:

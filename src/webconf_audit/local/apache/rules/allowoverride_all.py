@@ -6,6 +6,10 @@ from webconf_audit.local.apache.htaccess import (
     ALL_OVERRIDE_CATEGORIES,
     extract_allowoverride,
 )
+from webconf_audit.local.apache.path_matching import (
+    directory_path_covers,
+    path_match_specificity,
+)
 from webconf_audit.local.apache.parser import ApacheBlockNode, ApacheConfigAst, ApacheDirectiveNode
 from webconf_audit.models import Finding, SourceLocation
 from webconf_audit.rule_registry import rule
@@ -131,10 +135,10 @@ def _find_effective_allowoverride(
         if allowed is None:
             continue
 
-        if not _path_is_covered_by_directory(block_path, candidate_path):
+        if not directory_path_covers(block_path, candidate_path):
             continue
 
-        specificity = len(_normalize_path(candidate_path))
+        specificity = path_match_specificity(candidate_path)
         if best_match is None or specificity > best_match[0]:
             best_match = (specificity, allowed)
 
@@ -154,19 +158,6 @@ def _resolve_block_path(block: ApacheBlockNode) -> Path | None:
         return raw_path.resolve()
 
     return (Path(source_file_path).parent / raw_path).resolve()
-
-
-def _path_is_covered_by_directory(target_path: Path, directory_path: Path) -> bool:
-    target = _normalize_path(target_path)
-    directory = _normalize_path(directory_path)
-    return target == directory or target.startswith(directory + "/")
-
-
-def _normalize_path(path: Path) -> str:
-    normalized = str(path).replace("\\", "/").rstrip("/")
-    if path.drive:
-        return normalized.lower()
-    return normalized
 
 
 __all__ = ["find_allowoverride_all"]

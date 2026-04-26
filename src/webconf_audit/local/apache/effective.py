@@ -27,6 +27,10 @@ from webconf_audit.local.apache.htaccess import (
     extract_allowoverride,
     filter_htaccess_by_allowoverride,
 )
+from webconf_audit.local.apache.path_matching import (
+    directory_path_covers,
+    normalize_path_for_match,
+)
 from webconf_audit.local.apache.parser import (
     ApacheBlockNode,
     ApacheConfigAst,
@@ -342,7 +346,6 @@ def _collect_covering_directory_blocks(
     virtualhost_context: ApacheVirtualHostContext | None = None,
 ) -> list[tuple[str, ApacheBlockNode]]:
     """Find covering Directory blocks for the current global / VirtualHost scope."""
-    target_str = _normalize(target_dir)
     matches: list[tuple[str, int, ApacheBlockNode]] = []
 
     for block, source_priority in _iter_directory_blocks_for_context(
@@ -354,9 +357,13 @@ def _collect_covering_directory_blocks(
             continue
         if config_dir is not None and not dir_path.is_absolute():
             dir_path = _resolve_path_from_block(dir_path, block, config_dir)
-        dir_str = _normalize(dir_path)
 
-        if target_str == dir_str or target_str.startswith(dir_str + "/"):
+        if directory_path_covers(target_dir, dir_path, resolve=True, case_sensitive=False):
+            dir_str = normalize_path_for_match(
+                dir_path,
+                resolve=True,
+                case_sensitive=False,
+            )
             matches.append((dir_str, source_priority, block))
 
     matches.sort(key=lambda item: (len(item[0]), item[1]))
@@ -776,10 +783,6 @@ def _resolve_path_from_block(
     if config_dir is not None:
         return config_dir / raw_path
     return raw_path
-
-
-def _normalize(path: Path) -> str:
-    return str(path.resolve()).replace("\\", "/").rstrip("/").lower()
 
 
 __all__ = [

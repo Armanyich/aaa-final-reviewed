@@ -2,13 +2,7 @@
 
 ## Tech debt
 
-### Duplicate path-matching helpers
-- Current code has duplicated path normalization / coverage logic in two places:
-- `src/webconf_audit/local/apache_htaccess.py`
-- `src/webconf_audit/local/rules/apache/allowoverride_all.py`
-- This is not a functional bug right now, but it is technical debt.
-- Risk: future drift if one helper changes and the second copy is not updated.
-- Future cleanup: extract shared path-matching helpers into one common module.
+No open items.
 
 ## Watch later
 
