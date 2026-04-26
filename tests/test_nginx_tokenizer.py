@@ -143,17 +143,43 @@ def test_tokenize_quoted_string_with_spaces() -> None:
     ]
 
 
-def test_tokenize_rejects_single_quoted_string() -> None:
-    with pytest.raises(
-        NginxParseError,
-        match="Single-quoted strings are not supported in nginx config",
-    ) as exc_info:
-        NginxTokenizer("add_header Content-Security-Policy 'default-src self;';").tokenize()
+def test_tokenize_single_quoted_argument_in_directive() -> None:
+    tokens = NginxTokenizer(
+        "add_header Content-Security-Policy 'default-src self';"
+    ).tokenize()
 
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 36
+    assert [token.token_type for token in tokens] == [
+        TokenType.WORD,
+        TokenType.WORD,
+        TokenType.WORD,
+        TokenType.SEMICOLON,
+        TokenType.EOF,
+    ]
+    assert [token.value for token in tokens] == [
+        "add_header",
+        "Content-Security-Policy",
+        "default-src self",
+        ";",
+        "",
+    ]
+    assert tokens[2].line == 1
+    assert tokens[2].column == 36
+
+
+def test_tokenize_single_quoted_string_with_escaped_quote() -> None:
+    tokens = NginxTokenizer("set $value 'it\\'s fine';").tokenize()
+
+    assert [token.value for token in tokens] == ["set", "$value", "it's fine", ";", ""]
 
 
 def test_tokenize_unterminated_quoted_string() -> None:
     with pytest.raises(NginxParseError, match="Unterminated quoted string"):
         NginxTokenizer('root "/var/www/html;').tokenize()
+
+
+def test_tokenize_unterminated_single_quoted_string_reports_start() -> None:
+    with pytest.raises(NginxParseError, match="Unterminated quoted string") as exc_info:
+        NginxTokenizer("add_header Content-Security-Policy 'default-src self;").tokenize()
+
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 36
