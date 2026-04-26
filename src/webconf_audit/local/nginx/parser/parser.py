@@ -3,6 +3,7 @@ from __future__ import annotations
 from webconf_audit.local.nginx.parser.ast import BlockNode, ConfigAst, DirectiveNode, SourceSpan
 from webconf_audit.local.nginx.parser.tokens import Token, TokenType
 
+_MSG_SINGLE_QUOTE_NOT_SUPPORTED = "Single-quoted strings are not supported in nginx config"
 _MSG_UNTERMINATED_QUOTED_STRING = "Unterminated quoted string"
 
 
@@ -50,7 +51,10 @@ class NginxTokenizer:
                 i, column = _skip_comment(self.text, i, column, length)
                 continue
 
-            if char in {"'", '"'}:
+            if char == "'":
+                _raise_single_quote_error(self.file_path, line, column)
+
+            if char == '"':
                 token, i, line, column = _read_quoted_word(
                     self.text,
                     i,
@@ -58,7 +62,6 @@ class NginxTokenizer:
                     column,
                     length,
                     self.file_path,
-                    quote_char=char,
                 )
                 tokens.append(token)
                 continue
@@ -115,6 +118,19 @@ def _skip_comment(
     return index, column
 
 
+def _raise_single_quote_error(
+    file_path: str | None,
+    line: int,
+    column: int,
+) -> None:
+    raise NginxParseError(
+        _MSG_SINGLE_QUOTE_NOT_SUPPORTED,
+        file_path=file_path,
+        line=line,
+        column=column,
+    )
+
+
 def _read_quoted_word(
     text: str,
     index: int,
@@ -122,15 +138,13 @@ def _read_quoted_word(
     column: int,
     length: int,
     file_path: str | None,
-    *,
-    quote_char: str,
 ) -> tuple[Token, int, int, int]:
     start_line = line
     start_column = column
     index, column = _advance_inline_position(index, column)
     value_chars: list[str] = []
 
-    while index < length and text[index] != quote_char:
+    while index < length and text[index] != '"':
         if text[index] == "\\" and index + 1 < length:
             index, line, column = _consume_quoted_escape(
                 text,

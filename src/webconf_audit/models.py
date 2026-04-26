@@ -16,7 +16,6 @@ class SourceLocation(BaseModel):
     kind: LocationKind
     file_path: str | None = None
     line: int | None = None
-    column: int | None = None
     xml_path: str | None = None
     target: str | None = None
     details: str | None = None

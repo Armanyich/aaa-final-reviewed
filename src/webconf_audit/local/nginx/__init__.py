@@ -71,7 +71,6 @@ def analyze_nginx_config(config_path: str) -> AnalysisResult:
                         kind="file",
                         file_path=error_path,
                         line=getattr(exc, "line", None),
-                        column=getattr(exc, "column", None),
                     ),
                 )
             ],
