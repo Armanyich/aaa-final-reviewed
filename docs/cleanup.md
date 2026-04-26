@@ -6,13 +6,6 @@ No open items.
 
 ## Watch later
 
-### Nginx parser single-quoted strings
-- Current tokenizer supports double-quoted strings, bare words, comments, and source locations.
-- Real Nginx configurations can contain single-quoted directive arguments, for example `add_header Content-Security-Policy 'default-src self';`.
-- Current behavior treats a single quote as a parse error: `Single-quoted strings are not supported in nginx config`.
-- Future cleanup: support single-quoted arguments in `src/webconf_audit/local/nginx/parser/parser.py` while preserving line/column tracking and existing double-quoted string behavior.
-- Add tokenizer, parser, and end-to-end `analyze_nginx_config()` tests for single-quoted values and unterminated single-quoted strings.
-
 ### Lighttpd semantic alignment with real server behavior
 - Current Lighttpd analyzer is intentionally conservative, but it does not yet fully match documented Lighttpd config semantics.
 - Current merge logic in `src/webconf_audit/local/lighttpd/effective.py` can accumulate `+=` across matched conditional scopes more broadly than Lighttpd itself.
