@@ -13,6 +13,7 @@ from webconf_audit.local.iis.parser import (
     IISParseError,
     parse_iis_config,
 )
+from webconf_audit.local.iis.registry import IISRegistryTLS, resolve_registry_tls
 from webconf_audit.local.iis.rules_runner import run_iis_rules
 from webconf_audit.local.normalizers import normalize_config
 from webconf_audit.local.universal_rules import run_universal_rules
@@ -22,6 +23,8 @@ from webconf_audit.models import AnalysisIssue, AnalysisResult, Finding, SourceL
 def analyze_iis_config(
     config_path: str,
     machine_config_path: str | None = None,
+    tls_registry_path: str | None = None,
+    use_tls_registry: bool = True,
 ) -> AnalysisResult:
     path = Path(config_path)
 
@@ -114,17 +117,28 @@ def analyze_iis_config(
             ],
         )
 
+    registry_tls, registry_issues = resolve_registry_tls(
+        tls_registry_path,
+        use_live_registry=use_tls_registry,
+    )
+    if registry_tls is not None:
+        registry_issues.append(registry_tls.source_issue())
+
     if doc.config_kind == "applicationHost":
         return _analyze_application_host(
             doc,
             config_path,
             machine_config_path=machine_config_path,
+            registry_tls=registry_tls,
+            registry_issues=registry_issues,
         )
 
     return _analyze_single_config(
         doc,
         config_path,
         machine_config_path=machine_config_path,
+        registry_tls=registry_tls,
+        registry_issues=registry_issues,
     )
 
 
@@ -133,9 +147,11 @@ def _analyze_single_config(
     config_path: str,
     *,
     machine_config_path: str | None = None,
+    registry_tls: IISRegistryTLS | None = None,
+    registry_issues: list[AnalysisIssue] | None = None,
 ) -> AnalysisResult:
     """Analyze a single IIS config file (web.config, machine.config, standalone)."""
-    issues: list[AnalysisIssue] = []
+    issues: list[AnalysisIssue] = list(registry_issues or [])
     effective = build_effective_config(doc)
 
     inheritance_chain = [doc.file_path or config_path]
@@ -161,10 +177,16 @@ def _analyze_single_config(
         ],
         "machine_config_path": loaded_machine_config_path,
         "inheritance_chain": inheritance_chain,
+        "tls_registry_source": _registry_metadata(registry_tls),
     }
 
     findings = run_iis_rules(doc, effective_config=effective, issues=issues)
-    normalized = normalize_config("iis", doc=doc, effective_config=effective)
+    normalized = normalize_config(
+        "iis",
+        doc=doc,
+        effective_config=effective,
+        registry_tls=registry_tls,
+    )
     findings.extend(run_universal_rules(normalized, issues=issues))
 
     return AnalysisResult(
@@ -182,10 +204,12 @@ def _analyze_application_host(
     config_path: str,
     *,
     machine_config_path: str | None = None,
+    registry_tls: IISRegistryTLS | None = None,
+    registry_issues: list[AnalysisIssue] | None = None,
 ) -> AnalysisResult:
     """Analyze applicationHost.config with discovered sites/apps and optional machine.config."""
     all_findings: list[Finding] = []
-    all_issues: list[AnalysisIssue] = []
+    all_issues: list[AnalysisIssue] = list(registry_issues or [])
 
     discovery = discover_iis_sites(doc, machine_config_path=machine_config_path)
     all_issues.extend(discovery.issues)
@@ -208,7 +232,12 @@ def _analyze_application_host(
             base_chain = [discovery.machine_config_path, *base_chain]
 
     all_findings.extend(run_iis_rules(doc, effective_config=base_effective, issues=all_issues))
-    normalized = normalize_config("iis", doc=doc, effective_config=base_effective)
+    normalized = normalize_config(
+        "iis",
+        doc=doc,
+        effective_config=base_effective,
+        registry_tls=registry_tls,
+    )
     all_findings.extend(run_universal_rules(normalized, issues=all_issues))
 
     site_details: list[dict[str, object]] = []
@@ -258,6 +287,7 @@ def _analyze_application_host(
         "machine_config_path": discovery.machine_config_path,
         "inheritance_chain": inheritance_chains[0] if len(inheritance_chains) == 1 else base_chain,
         "inheritance_chains": inheritance_chains,
+        "tls_registry_source": _registry_metadata(registry_tls),
     }
 
     return AnalysisResult(
@@ -362,6 +392,18 @@ def _try_parse_iis_config_path(
                 ),
             )
         ]
+
+
+def _registry_metadata(registry_tls: IISRegistryTLS | None) -> dict[str, object] | None:
+    if registry_tls is None:
+        return None
+    return {
+        "source_kind": registry_tls.source_kind,
+        "source": registry_tls.source_file_path,
+        "host": registry_tls.host,
+        "protocols_known": registry_tls.protocols_enabled is not None,
+        "ciphers_known": registry_tls.ciphers_enabled is not None,
+    }
 
 
 __all__ = ["analyze_iis_config"]

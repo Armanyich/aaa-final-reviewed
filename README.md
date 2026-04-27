@@ -42,6 +42,7 @@ webconf-audit analyze-nginx /etc/nginx/nginx.conf
 webconf-audit analyze-apache /etc/apache2/httpd.conf
 webconf-audit analyze-lighttpd /etc/lighttpd/lighttpd.conf
 webconf-audit analyze-iis C:\inetpub\wwwroot\web.config
+webconf-audit analyze-iis C:\inetpub\wwwroot\web.config --tls-registry schannel.json
 ```
 
 ### External analysis
@@ -97,7 +98,10 @@ What each analyzer handles:
   inheritance chain `machine.config` → `applicationHost.config`
   → `web.config`, `<add>` / `<remove>` / `<clear>` collection
   semantics, `<location>` inheritance, `--machine-config` option for
-  explicit base config selection.
+  explicit base config selection, and Windows SChannel TLS registry
+  enrichment by default on Windows hosts. Use `--tls-registry <path>`
+  for a JSON export from the target IIS server or `--no-tls-registry`
+  to disable live registry enrichment.
 
 Each finding records severity, description, remediation hint, and a
 source reference: file and line for text configurations, file and XML

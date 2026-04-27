@@ -463,6 +463,44 @@ def test_analyze_iis_cli_passes_machine_config_option(monkeypatch) -> None:
     }
 
 
+def test_analyze_iis_cli_passes_tls_registry_options(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_analyze_iis_config(
+        config_path: str,
+        **kwargs,
+    ) -> AnalysisResult:
+        captured["config_path"] = config_path
+        captured.update(kwargs)
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="iis",
+            findings=[],
+            issues=[],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_iis_config", fake_analyze_iis_config)
+
+    result = runner.invoke(
+        app,
+        [
+            "analyze-iis",
+            "web.config",
+            "--tls-registry",
+            "schannel.json",
+            "--no-tls-registry",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured == {
+        "config_path": "web.config",
+        "tls_registry_path": "schannel.json",
+        "use_tls_registry": False,
+    }
+
+
 def test_analyze_lighttpd_cli_prints_issue_section(monkeypatch) -> None:
     def fake_analyze_lighttpd_config(config_path: str, **kwargs) -> AnalysisResult:
         return AnalysisResult(

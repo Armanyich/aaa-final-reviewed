@@ -9,6 +9,7 @@ from webconf_audit.local.iis.parser import (
     IISSection,
     IISSourceRef,
 )
+from webconf_audit.local.iis.registry import IISRegistryTLS
 from webconf_audit.local.normalizers.iis_normalizer import normalize_iis
 
 
@@ -61,6 +62,69 @@ def test_tls_ssl_required():
     assert tls is not None
     assert tls.require_ssl is True
     assert tls.protocols is None  # Unknown for IIS
+
+
+def test_tls_registry_enrichment_preserves_xml_anchor():
+    eff = IISEffectiveConfig(
+        global_sections={
+            "/access": _section("access", "/access", {"sslFlags": "Ssl"}, line=5),
+        },
+    )
+    registry_tls = IISRegistryTLS(
+        protocols_enabled=["TLSv1.0"],
+        ciphers_enabled=["RC4 40/128"],
+        source_kind="live",
+        host="iis-prod",
+    )
+    cfg = normalize_iis(_empty_doc(), effective_config=eff, registry_tls=registry_tls)
+
+    tls = cfg.scopes[0].tls
+    assert tls is not None
+    assert tls.require_ssl is True
+    assert tls.protocols == ["TLSv1.0"]
+    assert tls.ciphers == "RC4 40/128"
+    assert tls.source.line == 5
+    assert "iis-prod" in (tls.source.details or "")
+
+
+def test_tls_registry_enrichment_creates_global_tls_without_ssl_flags():
+    eff = IISEffectiveConfig(global_sections={})
+    registry_tls = IISRegistryTLS(
+        protocols_enabled=["TLSv1.0"],
+        source_kind="live",
+        host="iis-prod",
+    )
+    cfg = normalize_iis(_empty_doc(), effective_config=eff, registry_tls=registry_tls)
+
+    tls = cfg.scopes[0].tls
+    assert tls is not None
+    assert tls.require_ssl is None
+    assert tls.protocols == ["TLSv1.0"]
+    assert tls.source.file_path.startswith("registry://iis-prod/")
+
+
+def test_tls_registry_enrichment_is_not_duplicated_into_location_scopes():
+    eff = IISEffectiveConfig(
+        global_sections={},
+        location_sections={
+            "api": {
+                "/access": _section(
+                    "access", "/access", {"sslFlags": "Ssl"}, line=9,
+                ),
+            },
+        },
+    )
+    registry_tls = IISRegistryTLS(
+        protocols_enabled=["TLSv1.0"],
+        source_kind="live",
+        host="iis-prod",
+    )
+    cfg = normalize_iis(_empty_doc(), effective_config=eff, registry_tls=registry_tls)
+
+    assert cfg.scopes[0].scope_name == "global"
+    assert cfg.scopes[0].tls.protocols == ["TLSv1.0"]
+    assert cfg.scopes[1].scope_name == "api"
+    assert cfg.scopes[1].tls.protocols is None
 
 
 def test_tls_no_ssl_flags():
