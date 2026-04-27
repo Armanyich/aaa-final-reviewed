@@ -112,6 +112,54 @@ def test_parse_block_with_quoted_argument() -> None:
     assert node.source.column == 1
 
 
+def test_parse_directive_with_single_quoted_argument() -> None:
+    tokens = NginxTokenizer(
+        "add_header Content-Security-Policy 'default-src self';",
+        file_path="nginx.conf",
+    ).tokenize()
+
+    ast = NginxParser(tokens).parse()
+
+    assert len(ast.nodes) == 1
+    node = ast.nodes[0]
+    assert isinstance(node, DirectiveNode)
+    assert node.name == "add_header"
+    assert node.args == ["Content-Security-Policy", "default-src self"]
+    assert node.source.file_path == "nginx.conf"
+    assert node.source.line == 1
+    assert node.source.column == 1
+
+
+def test_parse_block_with_single_quoted_argument() -> None:
+    tokens = NginxTokenizer(
+        "location '/app path' { }",
+        file_path="nginx.conf",
+    ).tokenize()
+
+    ast = NginxParser(tokens).parse()
+
+    assert len(ast.nodes) == 1
+    node = ast.nodes[0]
+    assert isinstance(node, BlockNode)
+    assert node.name == "location"
+    assert node.args == ["/app path"]
+    assert node.children == []
+
+
+def test_parse_directive_with_mixed_single_and_double_quoted_arguments() -> None:
+    tokens = NginxTokenizer(
+        "add_header X-Test 'single value' \"double value\";",
+        file_path="nginx.conf",
+    ).tokenize()
+
+    ast = NginxParser(tokens).parse()
+
+    assert len(ast.nodes) == 1
+    node = ast.nodes[0]
+    assert isinstance(node, DirectiveNode)
+    assert node.args == ["X-Test", "single value", "double value"]
+
+
 def test_parse_include_directive_inside_block_as_regular_directive() -> None:
     tokens = NginxTokenizer("http { include mime.types; server { } }", file_path="nginx.conf").tokenize()
 

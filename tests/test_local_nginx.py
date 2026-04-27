@@ -53,6 +53,42 @@ def test_analyze_nginx_config_returns_issue_when_parsing_fails(tmp_path: Path) -
     assert issue.location.line == 1
 
 
+def test_analyze_nginx_config_accepts_single_quoted_directive_argument(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "add_header Content-Security-Policy 'default-src self';\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.server_type == "nginx"
+    assert result.issues == []
+
+
+def test_analyze_nginx_config_reports_unterminated_single_quoted_string(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "worker_processes 1;\nadd_header X-Test 'default-src self;\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert len(result.issues) == 1
+    issue = result.issues[0]
+    assert issue.code == "nginx_parse_error"
+    assert issue.message == "Unterminated quoted string"
+    assert issue.location is not None
+    assert issue.location.file_path == str(config_path)
+    assert issue.location.line == 2
+
+
 # happy path / basic analysis
 def test_analyze_nginx_config_returns_empty_result_for_existing_file(tmp_path: Path) -> None:
     config_path = tmp_path / "nginx.conf"
