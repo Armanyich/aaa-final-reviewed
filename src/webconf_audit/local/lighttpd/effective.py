@@ -534,6 +534,9 @@ def _branch_paths_contradict(
     previous: tuple[tuple[int, int], ...],
     current: tuple[tuple[int, int], ...],
 ) -> bool:
+    # Each nesting level appended by _collect_block contributes exactly one
+    # entry with a fresh chain_id from the global counter, so chain_ids are
+    # unique within a branch_path and dict() conversion is lossless.
     previous_branches = dict(previous)
     for chain_id, current_branch in current:
         previous_branch = previous_branches.get(chain_id)
