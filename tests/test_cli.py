@@ -608,6 +608,116 @@ def test_analyze_lighttpd_cli_passes_execute_shell_option(monkeypatch) -> None:
 
 
 # ---------------------------------------------------------------------------
+# --fail-on CI exit behavior
+# ---------------------------------------------------------------------------
+
+
+def test_fail_on_exits_2_for_findings_at_or_above_threshold(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.weak_ssl_protocols",
+                    title="Weak SSL protocols",
+                    severity="medium",
+                    description="desc",
+                    recommendation="rec",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    result = runner.invoke(app, ["analyze-nginx", "nginx.conf", "--fail-on", "medium"])
+
+    assert result.exit_code == 2
+    assert "nginx.weak_ssl_protocols" in result.stdout
+
+
+def test_fail_on_exits_0_when_findings_are_below_threshold(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.missing_access_log",
+                    title="Missing access log",
+                    severity="low",
+                    description="desc",
+                    recommendation="rec",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    result = runner.invoke(app, ["analyze-nginx", "nginx.conf", "--fail-on", "medium"])
+
+    assert result.exit_code == 0
+
+
+def test_fail_on_exits_1_when_analysis_has_error_issue(monkeypatch) -> None:
+    def fake_analyze_apache_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="apache",
+            findings=[
+                Finding(
+                    rule_id="apache.options_indexes",
+                    title="Indexes enabled",
+                    severity="medium",
+                    description="desc",
+                    recommendation="rec",
+                )
+            ],
+            issues=[
+                AnalysisIssue(
+                    code="apache_parse_error",
+                    level="error",
+                    message="Unable to parse config.",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_apache_config", fake_analyze_apache_config)
+
+    result = runner.invoke(app, ["analyze-apache", "httpd.conf", "--fail-on", "low"])
+
+    assert result.exit_code == 1
+    assert "apache_parse_error" in result.stdout
+
+
+def test_without_fail_on_keeps_interactive_exit_zero(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.weak_ssl_protocols",
+                    title="Weak SSL protocols",
+                    severity="critical",
+                    description="desc",
+                    recommendation="rec",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    result = runner.invoke(app, ["analyze-nginx", "nginx.conf"])
+
+    assert result.exit_code == 0
+
+
+# ---------------------------------------------------------------------------
 # --format json
 # ---------------------------------------------------------------------------
 

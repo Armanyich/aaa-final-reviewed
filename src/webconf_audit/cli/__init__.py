@@ -20,10 +20,45 @@ class OutputFormat(str, Enum):
     json = "json"
 
 
-def _output_result(result: AnalysisResult, fmt: OutputFormat = OutputFormat.text) -> None:
+class FailOnSeverity(str, Enum):
+    info = "info"
+    low = "low"
+    medium = "medium"
+    high = "high"
+    critical = "critical"
+
+
+_SEVERITY_RANK: dict[str, int] = {
+    "info": 0,
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "critical": 4,
+}
+
+
+def _output_result(
+    result: AnalysisResult,
+    fmt: OutputFormat = OutputFormat.text,
+    fail_on: FailOnSeverity | None = None,
+) -> None:
     report = ReportData(results=[result])
     formatter = TextFormatter() if fmt == OutputFormat.text else JsonFormatter()
     typer.echo(formatter.format(report))
+    exit_code = _ci_exit_code(result, fail_on)
+    if exit_code:
+        raise typer.Exit(exit_code)
+
+
+def _ci_exit_code(result: AnalysisResult, fail_on: FailOnSeverity | None) -> int:
+    if fail_on is None:
+        return 0
+    if any(issue.level == "error" for issue in result.issues):
+        return 1
+    threshold = _SEVERITY_RANK[fail_on.value]
+    if any(_SEVERITY_RANK[finding.severity] >= threshold for finding in result.findings):
+        return 2
+    return 0
 
 
 @app.command("analyze-nginx")
@@ -32,9 +67,14 @@ def analyze_nginx(
     output_format: OutputFormat = typer.Option(
         OutputFormat.text, "--format", "-f", help="Output format: text, json.",
     ),
+    fail_on: FailOnSeverity | None = typer.Option(
+        None,
+        "--fail-on",
+        help="Exit 2 when unsuppressed findings at or above this severity exist.",
+    ),
 ) -> None:
     result = analyze_nginx_config(config_path)
-    _output_result(result, output_format)
+    _output_result(result, output_format, fail_on)
 
 
 @app.command("analyze-apache")
@@ -43,9 +83,14 @@ def analyze_apache(
     output_format: OutputFormat = typer.Option(
         OutputFormat.text, "--format", "-f", help="Output format: text, json.",
     ),
+    fail_on: FailOnSeverity | None = typer.Option(
+        None,
+        "--fail-on",
+        help="Exit 2 when unsuppressed findings at or above this severity exist.",
+    ),
 ) -> None:
     result = analyze_apache_config(config_path)
-    _output_result(result, output_format)
+    _output_result(result, output_format, fail_on)
 
 
 @app.command("analyze-lighttpd")
@@ -64,11 +109,16 @@ def analyze_lighttpd(
     output_format: OutputFormat = typer.Option(
         OutputFormat.text, "--format", "-f", help="Output format: text, json.",
     ),
+    fail_on: FailOnSeverity | None = typer.Option(
+        None,
+        "--fail-on",
+        help="Exit 2 when unsuppressed findings at or above this severity exist.",
+    ),
 ) -> None:
     result = analyze_lighttpd_config(
         config_path, execute_shell=execute_shell, host=host,
     )
-    _output_result(result, output_format)
+    _output_result(result, output_format, fail_on)
 
 
 @app.command("analyze-iis")
@@ -95,6 +145,11 @@ def analyze_iis(
     output_format: OutputFormat = typer.Option(
         OutputFormat.text, "--format", "-f", help="Output format: text, json.",
     ),
+    fail_on: FailOnSeverity | None = typer.Option(
+        None,
+        "--fail-on",
+        help="Exit 2 when unsuppressed findings at or above this severity exist.",
+    ),
 ) -> None:
     kwargs: dict[str, object] = {}
     if machine_config is not None:
@@ -105,7 +160,7 @@ def analyze_iis(
         kwargs["use_tls_registry"] = False
 
     result = analyze_iis_config(config_path, **kwargs)
-    _output_result(result, output_format)
+    _output_result(result, output_format, fail_on)
 
 
 def _parse_ports(raw: str) -> tuple[int, ...]:
@@ -154,12 +209,17 @@ def analyze_external(
     output_format: OutputFormat = typer.Option(
         OutputFormat.text, "--format", "-f", help="Output format: text, json.",
     ),
+    fail_on: FailOnSeverity | None = typer.Option(
+        None,
+        "--fail-on",
+        help="Exit 2 when unsuppressed findings at or above this severity exist.",
+    ),
 ) -> None:
     parsed_ports: tuple[int, ...] | None = None
     if ports is not None:
         parsed_ports = _parse_ports(ports)
     result = analyze_external_target(target, scan_ports=scan_ports, ports=parsed_ports)
-    _output_result(result, output_format)
+    _output_result(result, output_format, fail_on)
 
 
 @app.command("list-rules")

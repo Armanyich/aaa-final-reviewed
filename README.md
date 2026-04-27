@@ -66,6 +66,26 @@ The JSON envelope contains a generation timestamp, a summary, the
 per-target results, the deduplicated findings list, and the issues
 list.
 
+### CI gating
+
+Every `analyze-*` command can act as a CI gate with `--fail-on`:
+
+```bash
+webconf-audit analyze-nginx nginx.conf --fail-on medium
+webconf-audit analyze-external example.com --fail-on high --format json
+```
+
+Exit codes in CI-gating mode:
+
+- `0` - analysis completed and no findings at or above the selected severity
+  were found.
+- `1` - analysis produced an execution or configuration error.
+- `2` - analysis completed and at least one finding met the selected severity
+  threshold.
+
+JSON findings include a stable `fingerprint` field that is designed for CI,
+future suppressions, and baseline/diff reporting.
+
 ## Local analysis pipeline
 
 Each local analyzer:
