@@ -8,6 +8,7 @@ from webconf_audit.local.lighttpd.conditions import (
     evaluate_condition,
     is_potentially_matching,
 )
+from webconf_audit.local.lighttpd import effective as lighttpd_effective
 from webconf_audit.local.lighttpd.effective import (
     LighttpdEffectiveConfig,
     LighttpdEffectiveDirective,
@@ -507,6 +508,12 @@ class TestMergeConditionalScopes:
         modules = merged["server.modules"].value
         assert '"mod_base"' in modules
         assert '"mod_extra"' in modules
+
+    def test_source_before_requires_matching_file_path_presence(self) -> None:
+        previous = LighttpdSourceSpan(file_path=None, line=1)
+        current = LighttpdSourceSpan(file_path="test.conf", line=2)
+
+        assert not lighttpd_effective._source_before(previous, current)
 
     def test_multiple_scopes_last_wins(self) -> None:
         cond1 = _cond('$HTTP["host"]', "==", "a.com")

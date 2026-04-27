@@ -460,7 +460,10 @@ def _source_before(
 ) -> bool:
     if previous.line is None or current.line is None:
         return False
-    if previous.file_path and current.file_path and previous.file_path != current.file_path:
+    if (
+        (previous.file_path or current.file_path)
+        and previous.file_path != current.file_path
+    ):
         return False
     return previous.line < current.line
 
