@@ -474,6 +474,40 @@ class TestMergeConditionalScopes:
         assert '"mod_admin"' in modules
         assert '"mod_feature"' in modules
 
+    def test_worst_case_append_does_not_merge_if_else_branches(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_host" )\n'
+            '}\n'
+            'else {\n'
+            '    server.modules += ( "mod_else" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_else"' in modules
+        assert '"mod_host"' not in modules
+
+    def test_worst_case_append_uses_compatible_conditional_assignment_base(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules = ( "mod_base" )\n'
+            '}\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_extra" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_base"' in modules
+        assert '"mod_extra"' in modules
+
     def test_multiple_scopes_last_wins(self) -> None:
         cond1 = _cond('$HTTP["host"]', "==", "a.com")
         cond2 = _cond('$HTTP["host"]', "==", "b.com")

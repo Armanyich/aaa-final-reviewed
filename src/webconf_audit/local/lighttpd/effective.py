@@ -25,6 +25,7 @@ class LighttpdEffectiveDirective:
     condition: LighttpdCondition | None
     source: LighttpdSourceSpan
     conditions: tuple[LighttpdCondition | None, ...] = ()
+    branch_path: tuple[tuple[int, int], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +46,8 @@ class LighttpdConditionalScope:
     sibling_if_index: int = -1
     # All previous branches in the same if/elseif/else chain.
     previous_branch_indices: tuple[int, ...] = ()
+    # One entry per nested if/elseif/else branch: (chain id, branch ordinal).
+    branch_path: tuple[tuple[int, int], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,8 +68,14 @@ def build_effective_config(
 ) -> LighttpdEffectiveConfig:
     global_directives: dict[str, LighttpdEffectiveDirective] = {}
     conditional_scopes: list[LighttpdConditionalScope] = []
+    branch_chain_counter = [0]
 
-    _collect_nodes(config_ast.nodes, global_directives, conditional_scopes)
+    _collect_nodes(
+        config_ast.nodes,
+        global_directives,
+        conditional_scopes,
+        branch_chain_counter,
+    )
 
     return LighttpdEffectiveConfig(
         global_directives=global_directives,
@@ -78,20 +87,30 @@ def _collect_nodes(
     nodes: list,
     global_directives: dict[str, LighttpdEffectiveDirective],
     conditional_scopes: list[LighttpdConditionalScope],
+    branch_chain_counter: list[int],
 ) -> None:
     branch_chain: list[int] = []
+    branch_chain_id: int | None = None
     for node in nodes:
         if isinstance(node, LighttpdBlockNode):
             previous_branch_indices = (
                 tuple(branch_chain) if node.branch_kind in {"else", "else_if"} else ()
             )
+            if node.branch_kind == "if" or branch_chain_id is None:
+                branch_chain_id = _next_branch_chain_id(branch_chain_counter)
+            branch_link = (branch_chain_id, len(previous_branch_indices))
             my_index = _collect_block(
                 node,
                 conditional_scopes,
                 parent_conditions=(),
+                parent_branch_path=(),
+                branch_link=branch_link,
                 previous_branch_indices=previous_branch_indices,
+                branch_chain_counter=branch_chain_counter,
             )
             branch_chain = _next_branch_chain(branch_chain, node.branch_kind, my_index)
+            if not branch_chain:
+                branch_chain_id = None
         else:
             if isinstance(node, LighttpdAssignmentNode):
                 _apply_assignment(
@@ -100,8 +119,10 @@ def _collect_nodes(
                     scope="global",
                     condition=None,
                     conditions=(),
+                    branch_path=(),
                 )
             branch_chain = []
+            branch_chain_id = None
 
 
 def _collect_block(
@@ -109,7 +130,10 @@ def _collect_block(
     conditional_scopes: list[LighttpdConditionalScope],
     *,
     parent_conditions: tuple[LighttpdCondition | None, ...],
+    parent_branch_path: tuple[tuple[int, int], ...],
+    branch_link: tuple[int, int],
     previous_branch_indices: tuple[int, ...],
+    branch_chain_counter: list[int],
 ) -> int:
     """Create a scope for this block's direct assignments, then recurse for nested blocks.
 
@@ -119,11 +143,13 @@ def _collect_block(
     scope_directives: dict[str, LighttpdEffectiveDirective] = {}
 
     conditions = (*parent_conditions, block.condition)
+    branch_path = (*parent_branch_path, branch_link)
     is_else = block.branch_kind == "else"
     is_else_if = block.branch_kind == "else_if"
 
     # Collect nested blocks — they inherit this block's full condition chain.
     nested_branch_chain: list[int] = []
+    nested_branch_chain_id: int | None = None
     for child in block.children:
         if isinstance(child, LighttpdBlockNode):
             nested_previous_branch_indices = (
@@ -131,17 +157,28 @@ def _collect_block(
                 if child.branch_kind in {"else", "else_if"}
                 else ()
             )
+            if child.branch_kind == "if" or nested_branch_chain_id is None:
+                nested_branch_chain_id = _next_branch_chain_id(branch_chain_counter)
+            nested_branch_link = (
+                nested_branch_chain_id,
+                len(nested_previous_branch_indices),
+            )
             nested_index = _collect_block(
                 child,
                 conditional_scopes,
                 parent_conditions=conditions,
+                parent_branch_path=branch_path,
+                branch_link=nested_branch_link,
                 previous_branch_indices=nested_previous_branch_indices,
+                branch_chain_counter=branch_chain_counter,
             )
             nested_branch_chain = _next_branch_chain(
                 nested_branch_chain,
                 child.branch_kind,
                 nested_index,
             )
+            if not nested_branch_chain:
+                nested_branch_chain_id = None
         else:
             if isinstance(child, LighttpdAssignmentNode):
                 _apply_assignment(
@@ -150,8 +187,10 @@ def _collect_block(
                     scope="conditional",
                     condition=block.condition,
                     conditions=conditions,
+                    branch_path=branch_path,
                 )
             nested_branch_chain = []
+            nested_branch_chain_id = None
 
     my_index = len(conditional_scopes)
     conditional_scopes.append(
@@ -166,9 +205,16 @@ def _collect_block(
             if (is_else or is_else_if) and previous_branch_indices
             else -1,
             previous_branch_indices=previous_branch_indices,
+            branch_path=branch_path,
         )
     )
     return my_index
+
+
+def _next_branch_chain_id(branch_chain_counter: list[int]) -> int:
+    branch_chain_id = branch_chain_counter[0]
+    branch_chain_counter[0] += 1
+    return branch_chain_id
 
 
 def _next_branch_chain(
@@ -190,6 +236,7 @@ def _apply_assignment(
     scope: str,
     condition: LighttpdCondition | None,
     conditions: tuple[LighttpdCondition | None, ...],
+    branch_path: tuple[tuple[int, int], ...],
 ) -> None:
     effective = LighttpdEffectiveDirective(
         name=node.name,
@@ -199,6 +246,7 @@ def _apply_assignment(
         condition=condition,
         source=node.source,
         conditions=conditions,
+        branch_path=branch_path,
     )
 
     if node.operator == "+=" and node.name in directives:
@@ -212,6 +260,7 @@ def _apply_assignment(
             condition=condition,
             source=node.source,
             conditions=conditions,
+            branch_path=branch_path,
         )
 
     # "=" and ":=" both use last-wins.
@@ -314,9 +363,16 @@ def merge_conditional_scopes(
                     condition=directive.condition,
                     source=directive.source,
                     conditions=directive.conditions,
+                    branch_path=directive.branch_path,
                 )
             else:
                 merged[name] = directive
+                if context is None and directive.operator in {"=", ":="}:
+                    _record_worst_case_assignment(
+                        name,
+                        directive,
+                        append_accumulators,
+                    )
 
     return merged
 
@@ -332,7 +388,10 @@ def _merge_worst_case_append(
     if compatible_index is not None:
         prev_value = accumulators[compatible_index].value
     else:
-        base = effective_config.global_directives.get(name)
+        base = _last_compatible_base_directive(name, directive, effective_config)
+        if base is not None:
+            accumulators.append(base)
+            compatible_index = len(accumulators) - 1
         prev_value = base.value if base is not None else None
 
     merged_value = (
@@ -348,12 +407,66 @@ def _merge_worst_case_append(
         condition=directive.condition,
         source=directive.source,
         conditions=directive.conditions,
+        branch_path=directive.branch_path,
     )
     if compatible_index is None:
         accumulators.append(merged)
     else:
         accumulators[compatible_index] = merged
     return merged
+
+
+def _record_worst_case_assignment(
+    name: str,
+    directive: LighttpdEffectiveDirective,
+    append_accumulators: dict[str, list[LighttpdEffectiveDirective]],
+) -> None:
+    accumulators = append_accumulators.setdefault(name, [])
+    compatible_index = _append_compatible_index(accumulators, directive)
+    if compatible_index is None:
+        accumulators.append(directive)
+    else:
+        accumulators[compatible_index] = directive
+
+
+def _last_compatible_base_directive(
+    name: str,
+    directive: LighttpdEffectiveDirective,
+    effective_config: LighttpdEffectiveConfig,
+) -> LighttpdEffectiveDirective | None:
+    candidates: list[LighttpdEffectiveDirective] = []
+    global_directive = effective_config.global_directives.get(name)
+    if global_directive is not None:
+        candidates.append(global_directive)
+
+    for scope in effective_config.conditional_scopes:
+        candidate = scope.directives.get(name)
+        if (
+            candidate is not None
+            and candidate.operator in {"=", ":="}
+            and _source_before(candidate.source, directive.source)
+            and _append_scope_compatible(candidate, directive)
+        ):
+            candidates.append(candidate)
+
+    if not candidates:
+        return None
+    return max(candidates, key=lambda candidate: _source_sort_key(candidate.source))
+
+
+def _source_before(
+    previous: LighttpdSourceSpan,
+    current: LighttpdSourceSpan,
+) -> bool:
+    if previous.line is None or current.line is None:
+        return False
+    if previous.file_path and current.file_path and previous.file_path != current.file_path:
+        return False
+    return previous.line < current.line
+
+
+def _source_sort_key(source: LighttpdSourceSpan) -> tuple[str, int]:
+    return (source.file_path or "", source.line or -1)
 
 
 def _append_compatible_index(
@@ -370,7 +483,22 @@ def _append_scope_compatible(
     previous: LighttpdEffectiveDirective,
     current: LighttpdEffectiveDirective,
 ) -> bool:
-    return not _condition_chains_contradict(previous.conditions, current.conditions)
+    return not (
+        _branch_paths_contradict(previous.branch_path, current.branch_path)
+        or _condition_chains_contradict(previous.conditions, current.conditions)
+    )
+
+
+def _branch_paths_contradict(
+    previous: tuple[tuple[int, int], ...],
+    current: tuple[tuple[int, int], ...],
+) -> bool:
+    previous_branches = dict(previous)
+    for chain_id, current_branch in current:
+        previous_branch = previous_branches.get(chain_id)
+        if previous_branch is not None and previous_branch != current_branch:
+            return True
+    return False
 
 
 def _condition_chains_contradict(
