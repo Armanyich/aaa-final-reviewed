@@ -530,7 +530,43 @@ def _conditions_contradict(
         return previous.value == current.value
     if previous.operator == "!=" and current.operator == "==":
         return previous.value == current.value
+    if previous.operator == "=^" and current.operator == "=^":
+        return not _values_share_prefix(previous.value, current.value)
+    if previous.operator == "=$" and current.operator == "=$":
+        return not _values_share_suffix(previous.value, current.value)
+    if previous.operator == "==" and current.operator in {"=^", "=$"}:
+        return _equal_value_misses_pattern(
+            previous.value,
+            current.operator,
+            current.value,
+        )
+    if current.operator == "==" and previous.operator in {"=^", "=$"}:
+        return _equal_value_misses_pattern(
+            current.value,
+            previous.operator,
+            previous.value,
+        )
 
+    return False
+
+
+def _values_share_prefix(previous: str, current: str) -> bool:
+    return previous.startswith(current) or current.startswith(previous)
+
+
+def _values_share_suffix(previous: str, current: str) -> bool:
+    return previous.endswith(current) or current.endswith(previous)
+
+
+def _equal_value_misses_pattern(
+    equal_value: str,
+    pattern_operator: str,
+    pattern_value: str,
+) -> bool:
+    if pattern_operator == "=^":
+        return not equal_value.startswith(pattern_value)
+    if pattern_operator == "=$":
+        return not equal_value.endswith(pattern_value)
     return False
 
 

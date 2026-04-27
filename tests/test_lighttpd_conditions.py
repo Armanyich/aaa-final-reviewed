@@ -475,6 +475,78 @@ class TestMergeConditionalScopes:
         assert '"mod_admin"' in modules
         assert '"mod_feature"' in modules
 
+    def test_worst_case_append_does_not_merge_impossible_prefix_conditions(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["url"] =^ "/admin" {\n'
+            '    server.modules += ( "mod_admin" )\n'
+            '}\n'
+            '$HTTP["url"] =^ "/api" {\n'
+            '    server.modules += ( "mod_api" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_api"' in modules
+        assert '"mod_admin"' not in modules
+
+    def test_worst_case_append_does_not_merge_impossible_suffix_conditions(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["url"] =$ ".php" {\n'
+            '    server.modules += ( "mod_php" )\n'
+            '}\n'
+            '$HTTP["url"] =$ ".html" {\n'
+            '    server.modules += ( "mod_html" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_html"' in modules
+        assert '"mod_php"' not in modules
+
+    def test_worst_case_append_merges_equal_value_matching_prefix_condition(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["url"] == "/admin/settings" {\n'
+            '    server.modules += ( "mod_exact" )\n'
+            '}\n'
+            '$HTTP["url"] =^ "/admin" {\n'
+            '    server.modules += ( "mod_prefix" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_exact"' in modules
+        assert '"mod_prefix"' in modules
+
+    def test_worst_case_append_does_not_merge_equal_value_missing_suffix_condition(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["url"] == "/admin/settings" {\n'
+            '    server.modules += ( "mod_exact" )\n'
+            '}\n'
+            '$HTTP["url"] =$ ".php" {\n'
+            '    server.modules += ( "mod_php" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_php"' in modules
+        assert '"mod_exact"' not in modules
+
     def test_worst_case_append_does_not_merge_if_else_branches(self) -> None:
         ast = parse_lighttpd_config(
             'server.modules = ( "mod_access" )\n'
