@@ -349,6 +349,36 @@ class TestMergeConditionalScopes:
         merged = merge_conditional_scopes(eff, context=None)
         assert merged["server.tag"].value == '""'
 
+    def test_nested_matching_scope_overrides_prior_parent_directive(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    server.tag = "parent"\n'
+            '    $HTTP["url"] == "/x" {\n'
+            '        server.tag = "child"\n'
+            '    }\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        ctx = LighttpdRequestContext(host="a.example", url_path="/x")
+        merged = merge_conditional_scopes(eff, context=ctx)
+
+        assert merged["server.tag"].value == '"child"'
+
+    def test_parent_directive_after_nested_scope_overrides_child(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    $HTTP["url"] == "/x" {\n'
+            '        server.tag = "child"\n'
+            '    }\n'
+            '    server.tag = "parent-after"\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        ctx = LighttpdRequestContext(host="a.example", url_path="/x")
+        merged = merge_conditional_scopes(eff, context=ctx)
+
+        assert merged["server.tag"].value == '"parent-after"'
+
     def test_append_accumulates_across_scopes(self) -> None:
         cond = _cond('$HTTP["host"]', "==", "example.com")
         eff = LighttpdEffectiveConfig(
@@ -778,8 +808,8 @@ class TestNestedConditionChain:
             '}\n',
         )
         eff = build_effective_config(ast)
-        # There should be 2 scopes: the nested one and the parent.
-        # The nested scope (first due to recursion order) has 2 conditions.
+        # There should be 2 scopes: the parent and the nested one.
+        # The nested scope has 2 conditions.
         nested = [s for s in eff.conditional_scopes if len(s.conditions) == 2]
         assert len(nested) == 1
         assert nested[0].conditions[0].variable == '$HTTP["host"]'

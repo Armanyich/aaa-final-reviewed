@@ -140,12 +140,22 @@ def _collect_block(
     Returns the index of the scope that was just appended (used as
     ``sibling_if_index`` for a following ``else`` block).
     """
-    scope_directives: dict[str, LighttpdEffectiveDirective] = {}
-
     conditions = (*parent_conditions, block.condition)
     branch_path = (*parent_branch_path, branch_link)
     is_else = block.branch_kind == "else"
     is_else_if = block.branch_kind == "else_if"
+    my_index = len(conditional_scopes)
+    current_directives: dict[str, LighttpdEffectiveDirective] | None = {}
+    _append_conditional_scope(
+        conditional_scopes,
+        block=block,
+        directives=current_directives,
+        conditions=conditions,
+        branch_path=branch_path,
+        is_else=is_else,
+        is_else_if=is_else_if,
+        previous_branch_indices=previous_branch_indices,
+    )
 
     # Collect nested blocks — they inherit this block's full condition chain.
     nested_branch_chain: list[int] = []
@@ -179,11 +189,24 @@ def _collect_block(
             )
             if not nested_branch_chain:
                 nested_branch_chain_id = None
+            current_directives = None
         else:
             if isinstance(child, LighttpdAssignmentNode):
+                if current_directives is None:
+                    current_directives = {}
+                    _append_conditional_scope(
+                        conditional_scopes,
+                        block=block,
+                        directives=current_directives,
+                        conditions=conditions,
+                        branch_path=branch_path,
+                        is_else=is_else,
+                        is_else_if=is_else_if,
+                        previous_branch_indices=previous_branch_indices,
+                    )
                 _apply_assignment(
                     child,
-                    scope_directives,
+                    current_directives,
                     scope="conditional",
                     condition=block.condition,
                     conditions=conditions,
@@ -192,12 +215,25 @@ def _collect_block(
             nested_branch_chain = []
             nested_branch_chain_id = None
 
-    my_index = len(conditional_scopes)
+    return my_index
+
+
+def _append_conditional_scope(
+    conditional_scopes: list[LighttpdConditionalScope],
+    *,
+    block: LighttpdBlockNode,
+    directives: dict[str, LighttpdEffectiveDirective],
+    conditions: tuple[LighttpdCondition | None, ...],
+    branch_path: tuple[tuple[int, int], ...],
+    is_else: bool,
+    is_else_if: bool,
+    previous_branch_indices: tuple[int, ...],
+) -> None:
     conditional_scopes.append(
         LighttpdConditionalScope(
             condition=block.condition,
             header=block.header,
-            directives=scope_directives,
+            directives=directives,
             conditions=conditions,
             is_else=is_else,
             is_else_if=is_else_if,
@@ -208,7 +244,6 @@ def _collect_block(
             branch_path=branch_path,
         )
     )
-    return my_index
 
 
 def _next_branch_chain_id(branch_chain_counter: list[int]) -> int:

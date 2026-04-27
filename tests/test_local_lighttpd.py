@@ -678,15 +678,18 @@ def test_effective_config_nested_block_becomes_separate_scope() -> None:
         "}\n",
     )
     eff = build_effective_config(ast)
-    # Two scopes: the nested url block + the outer host block.
+    # Two scopes: the outer host block + the nested url block.
     assert len(eff.conditional_scopes) == 2
     # Nested block has its own scope with its own directive.
-    url_scope = eff.conditional_scopes[0]
+    url_scope = next(
+        scope
+        for scope in eff.conditional_scopes
+        if scope.condition is not None and scope.condition.operator == "=~"
+    )
     assert url_scope.condition is not None
-    assert url_scope.condition.operator == "=~"
     assert "server.tag" in url_scope.directives
     # Parent block has only its direct assignment.
-    host_scope = eff.conditional_scopes[1]
+    host_scope = eff.conditional_scopes[0]
     assert host_scope.condition is not None
     assert host_scope.condition.variable == '$HTTP["host"]'
     assert "server.port" in host_scope.directives
@@ -706,12 +709,14 @@ def test_effective_config_sibling_nested_conditions_stay_separate() -> None:
         "}\n",
     )
     eff = build_effective_config(ast)
-    # Three scopes: two nested url blocks + one parent host block.
+    # Three scopes: one parent host block + two nested url blocks.
     assert len(eff.conditional_scopes) == 3
-    api_scope = eff.conditional_scopes[0]
-    admin_scope = eff.conditional_scopes[1]
-    assert api_scope.directives["server.tag"].value == '"api"'
-    assert admin_scope.directives["server.tag"].value == '"admin"'
+    nested_values = [
+        scope.directives["server.tag"].value
+        for scope in eff.conditional_scopes
+        if "server.tag" in scope.directives
+    ]
+    assert nested_values == ['"api"', '"admin"']
 
 
 def test_effective_config_source_location_preserved() -> None:
