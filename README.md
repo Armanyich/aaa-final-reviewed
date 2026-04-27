@@ -184,14 +184,23 @@ The current development plan is tracked in
 
 ## Development
 
-Run the tests:
+Install the development dependency group:
 
 ```bash
-pytest -q
+uv sync --group dev
 ```
 
-Lint:
+Run the same fast checks as the pull-request CI workflow:
 
 ```bash
-ruff check .
+uv run ruff check .
+uv run python -m compileall -q src
+uv run pytest tests --ignore=tests/integration_external --ignore=tests/integration_local --ignore=tests/integration_rule_coverage -q
+uv run webconf-audit list-rules
+```
+
+Run the Docker-backed integration slice when Docker Engine is available:
+
+```bash
+uv run pytest tests/integration_external tests/integration_local tests/integration_rule_coverage -q
 ```

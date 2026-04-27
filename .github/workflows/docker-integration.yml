@@ -1,0 +1,42 @@
+name: Docker Integration
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  docker-integration:
+    name: Docker-backed integration tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --group dev --locked
+
+      - name: Show Docker versions
+        run: |
+          docker version
+          docker compose version
+
+      - name: Run Docker integration tests
+        run: >
+          uv run --locked pytest
+          tests/integration_external
+          tests/integration_local
+          tests/integration_rule_coverage
+          -q

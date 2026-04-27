@@ -16,6 +16,7 @@ src/*.egg-info/
 
 # Local working directory and generated reports
 /.lab/
+/.tmp/
 /demo/local_admin/reports/
 
 # Office documents and temp files

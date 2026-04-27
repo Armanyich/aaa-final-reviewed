@@ -42,6 +42,10 @@ Acceptance criteria:
 - The workflow runs under the repository owner only and does not require
   secrets.
 
+Status: implemented by `.github/workflows/ci.yml`,
+`.github/workflows/docker-integration.yml`, the `dev` dependency group, and the
+local command set documented in `README.md`.
+
 ### 2. CI Integration Features For Users
 
 Goal: make `webconf-audit` usable as a CI gate in real repositories, not only as
@@ -156,5 +160,5 @@ Acceptance criteria:
 
 ## Current Priority
 
-The next concrete task is milestone 1: project CI for this repository.
-
+The next concrete task after merging milestone 1 is milestone 2: CI integration
+features for users.
