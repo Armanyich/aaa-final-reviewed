@@ -1254,13 +1254,21 @@ class TestAnalyzerHostFilter:
 
 
 class TestCLIHostOption:
-    def test_cli_help_includes_host(self) -> None:
+    def test_cli_registers_host_option(self) -> None:
+        import typer
         from typer.testing import CliRunner
         from webconf_audit.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(app, ["analyze-lighttpd", "--help"])
-        assert "--host" in result.output
+        result = runner.invoke(app, ["analyze-lighttpd", "--help"], color=False)
+        assert result.exit_code == 0
+
+        command = typer.main.get_command(app)
+        lighttpd_command = command.get_command(None, "analyze-lighttpd")
+        assert lighttpd_command is not None
+        assert any(
+            "--host" in getattr(param, "opts", ()) for param in lighttpd_command.params
+        )
 
     def test_cli_with_host(self, tmp_path) -> None:
         from typer.testing import CliRunner
