@@ -81,16 +81,7 @@ def _collect_nodes(
 ) -> None:
     branch_chain: list[int] = []
     for node in nodes:
-        if isinstance(node, LighttpdAssignmentNode):
-            _apply_assignment(
-                node,
-                global_directives,
-                scope="global",
-                condition=None,
-                conditions=(),
-            )
-            branch_chain = []
-        elif isinstance(node, LighttpdBlockNode):
+        if isinstance(node, LighttpdBlockNode):
             previous_branch_indices = (
                 tuple(branch_chain) if node.branch_kind in {"else", "else_if"} else ()
             )
@@ -101,6 +92,16 @@ def _collect_nodes(
                 previous_branch_indices=previous_branch_indices,
             )
             branch_chain = _next_branch_chain(branch_chain, node.branch_kind, my_index)
+        else:
+            if isinstance(node, LighttpdAssignmentNode):
+                _apply_assignment(
+                    node,
+                    global_directives,
+                    scope="global",
+                    condition=None,
+                    conditions=(),
+                )
+            branch_chain = []
 
 
 def _collect_block(
@@ -124,16 +125,7 @@ def _collect_block(
     # Collect nested blocks — they inherit this block's full condition chain.
     nested_branch_chain: list[int] = []
     for child in block.children:
-        if isinstance(child, LighttpdAssignmentNode):
-            _apply_assignment(
-                child,
-                scope_directives,
-                scope="conditional",
-                condition=block.condition,
-                conditions=conditions,
-            )
-            nested_branch_chain = []
-        elif isinstance(child, LighttpdBlockNode):
+        if isinstance(child, LighttpdBlockNode):
             nested_previous_branch_indices = (
                 tuple(nested_branch_chain)
                 if child.branch_kind in {"else", "else_if"}
@@ -150,6 +142,16 @@ def _collect_block(
                 child.branch_kind,
                 nested_index,
             )
+        else:
+            if isinstance(child, LighttpdAssignmentNode):
+                _apply_assignment(
+                    child,
+                    scope_directives,
+                    scope="conditional",
+                    condition=block.condition,
+                    conditions=conditions,
+                )
+            nested_branch_chain = []
 
     my_index = len(conditional_scopes)
     conditional_scopes.append(

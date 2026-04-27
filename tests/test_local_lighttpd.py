@@ -262,6 +262,26 @@ def test_parse_condition_unrecognized_header_has_no_condition() -> None:
     assert block.condition is None
 
 
+def test_parse_explicit_if_with_invalid_condition_errors() -> None:
+    with pytest.raises(LighttpdParseError, match="Invalid conditional block header: if"):
+        parse_lighttpd_config(
+            "if some_custom_block {\n"
+            "    server.port = 8080\n"
+            "}\n",
+            file_path="lighttpd.conf",
+        )
+
+
+def test_parse_explicit_else_if_with_invalid_condition_errors() -> None:
+    with pytest.raises(LighttpdParseError, match="Invalid conditional block header: elseif"):
+        parse_lighttpd_config(
+            "elseif some_custom_block {\n"
+            "    server.port = 8080\n"
+            "}\n",
+            file_path="lighttpd.conf",
+        )
+
+
 def test_parse_condition_existing_block_test_still_works() -> None:
     """Existing test: condition parsing does not break header field."""
     ast = parse_lighttpd_config(

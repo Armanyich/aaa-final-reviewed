@@ -119,7 +119,11 @@ class LighttpdParser:
                         file_path=self.file_path,
                     )
 
-                condition, branch_kind = _parse_block_header(header)
+                condition, branch_kind = _parse_block_header(
+                    header,
+                    line=statement.line,
+                    file_path=self.file_path,
+                )
                 children = self._parse_nodes(in_block=True)
                 nodes.append(
                     LighttpdBlockNode(
@@ -624,7 +628,12 @@ _ELSE_IF_PATTERN = re.compile(
 _IF_PATTERN = re.compile(r"^if\s+(.+)$", re.IGNORECASE)
 
 
-def _parse_block_header(header: str) -> tuple[LighttpdCondition | None, str]:
+def _parse_block_header(
+    header: str,
+    *,
+    line: int | None = None,
+    file_path: str | None = None,
+) -> tuple[LighttpdCondition | None, str]:
     stripped = header.strip()
 
     if stripped.lower() == "else":
@@ -633,12 +642,24 @@ def _parse_block_header(header: str) -> tuple[LighttpdCondition | None, str]:
     if_match = _IF_PATTERN.match(stripped)
     if if_match is not None:
         condition = _parse_condition(if_match.group(1))
-        return condition, "if" if condition is not None else "block"
+        if condition is None:
+            raise LighttpdParseError(
+                f"Invalid conditional block header: {header}",
+                line=line,
+                file_path=file_path,
+            )
+        return condition, "if"
 
     else_if_match = _ELSE_IF_PATTERN.match(stripped)
     if else_if_match is not None:
         condition = _parse_condition(else_if_match.group(1))
-        return condition, "else_if" if condition is not None else "block"
+        if condition is None:
+            raise LighttpdParseError(
+                f"Invalid conditional block header: {header}",
+                line=line,
+                file_path=file_path,
+            )
+        return condition, "else_if"
 
     condition = _parse_condition(stripped)
     return condition, "if" if condition is not None else "block"

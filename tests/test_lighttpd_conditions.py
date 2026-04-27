@@ -741,6 +741,45 @@ class TestElseBranchHandling:
         assert len(else_if_scopes[0].previous_branch_indices) == 1
         assert len(else_scopes[0].previous_branch_indices) == 2
 
+    def test_top_level_directive_breaks_else_chain(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    server.tag = "A"\n'
+            '}\n'
+            'include "break.conf"\n'
+            'else {\n'
+            '    server.tag = "fallback"\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=LighttpdRequestContext(host="a.example"))
+
+        else_scopes = [s for s in eff.conditional_scopes if s.is_else]
+        assert len(else_scopes) == 1
+        assert else_scopes[0].previous_branch_indices == ()
+        assert merged["server.tag"].value == '"fallback"'
+
+    def test_nested_directive_breaks_else_chain(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    $HTTP["url"] == "/admin" {\n'
+            '        server.tag = "admin"\n'
+            '    }\n'
+            '    include "break.conf"\n'
+            '    else {\n'
+            '        server.tag = "fallback"\n'
+            '    }\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        ctx = LighttpdRequestContext(host="a.example", url_path="/admin")
+        merged = merge_conditional_scopes(eff, context=ctx)
+
+        nested_else_scopes = [s for s in eff.conditional_scopes if s.is_else]
+        assert len(nested_else_scopes) == 1
+        assert nested_else_scopes[0].previous_branch_indices == ()
+        assert merged["server.tag"].value == '"fallback"'
+
 
 # ---------------------------------------------------------------------------
 # Regression: P2 — rules use merged_directives for host filtering
