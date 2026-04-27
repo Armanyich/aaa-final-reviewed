@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 AnalysisMode = Literal["local", "external"]
 Severity = Literal["info", "low", "medium", "high", "critical"]
-IssueLevel = Literal["warning", "error"]
+IssueLevel = Literal["info", "warning", "error"]
 ResultKind = Literal["finding", "analysis_issue"]
 LocationKind = Literal["file", "xml", "endpoint", "url", "header", "tls", "check"]
 

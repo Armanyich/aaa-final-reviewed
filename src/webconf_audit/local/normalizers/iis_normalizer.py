@@ -1,9 +1,8 @@
-"""IIS config → NormalizedConfig mapper.
+"""IIS config to NormalizedConfig mapper.
 
-IIS TLS protocol configuration lives in the Windows registry, not in
-``web.config`` / ``applicationHost.config``.  The normalizer extracts
-``sslFlags`` from ``system.webServer/security/access`` and HTTPS bindings,
-but leaves ``protocols`` as ``None`` (unknown).
+The normalizer extracts XML-backed signals from ``web.config`` /
+``applicationHost.config``. When SChannel registry data is supplied by the IIS
+analyzer, it also enriches the global TLS scope with protocol and cipher data.
 """
 
 from __future__ import annotations
@@ -12,6 +11,7 @@ import logging
 
 from webconf_audit.local.iis.effective import IISEffectiveConfig, IISEffectiveSection
 from webconf_audit.local.iis.parser import IISConfigDocument, IISSourceRef
+from webconf_audit.local.iis.registry import IISRegistryTLS
 from webconf_audit.local.normalized import (
     NormalizedAccessPolicy,
     NormalizedConfig,
@@ -46,6 +46,7 @@ _logger = logging.getLogger(__name__)
 def normalize_iis(
     doc: IISConfigDocument,
     effective_config: IISEffectiveConfig | None = None,
+    registry_tls: IISRegistryTLS | None = None,
 ) -> NormalizedConfig:
     """Extract normalized entities from IIS config."""
     if effective_config is None:
@@ -58,32 +59,28 @@ def normalize_iis(
 
     scopes: list[NormalizedScope] = []
 
-    # Global scope
     global_scope = _build_scope(
         effective_config.global_sections,
         scope_name="global",
         doc=doc,
+        registry_tls=registry_tls,
     )
     scopes.append(global_scope)
 
-    # Location scopes
     for loc_path, sections in effective_config.location_sections.items():
-        scope = _build_scope(sections, scope_name=loc_path, doc=doc)
-        scopes.append(scope)
+        scopes.append(_build_scope(sections, scope_name=loc_path, doc=doc))
 
     return NormalizedConfig(server_type="iis", scopes=scopes)
-
-
-# -- scope builder -----------------------------------------------------------
 
 
 def _build_scope(
     sections: dict[str, IISEffectiveSection],
     scope_name: str | None,
     doc: IISConfigDocument,
+    registry_tls: IISRegistryTLS | None = None,
 ) -> NormalizedScope:
     listen_points = _extract_listen_points(doc)
-    tls = _extract_tls(sections)
+    tls = _extract_tls(sections, registry_tls=registry_tls)
     headers = _extract_security_headers(sections)
     access_policy = _extract_access_policy(sections)
 
@@ -96,15 +93,12 @@ def _build_scope(
     )
 
 
-# -- listen points -----------------------------------------------------------
-
-
 def _extract_listen_points(doc: IISConfigDocument) -> list[NormalizedListenPoint]:
     """Extract listen points from IIS bindings if available.
 
     Bindings are typically in ``system.applicationHost/sites`` inside
-    ``applicationHost.config``.  For ``web.config`` there are usually no
-    bindings — return empty list.
+    ``applicationHost.config``. For ``web.config`` there are usually no
+    bindings, so the result is empty.
     """
     points: list[NormalizedListenPoint] = []
     for section in doc.sections:
@@ -147,31 +141,38 @@ def _parse_binding(
     )
 
 
-# -- TLS --------------------------------------------------------------------
-
-
 def _extract_tls(
     sections: dict[str, IISEffectiveSection],
+    *,
+    registry_tls: IISRegistryTLS | None = None,
 ) -> NormalizedTLS | None:
     access = sections.get(_ACCESS_SUFFIX)
-    if access is None:
-        return None
+    require_ssl: bool | None = None
+    xml_source: SourceRef | None = None
 
-    ssl_flags = access.attributes.get("sslFlags", "").lower()
-    if not ssl_flags:
-        return None
+    if access is not None:
+        ssl_flags = access.attributes.get("sslFlags", "").lower()
+        if ssl_flags:
+            require_ssl = "ssl" in ssl_flags
+            xml_source = _ref(access.source, details=_registry_details(registry_tls))
 
-    require_ssl = "ssl" in ssl_flags
+    if registry_tls is not None and registry_tls.has_data:
+        return NormalizedTLS(
+            source=xml_source or registry_tls.source_ref(),
+            protocols=registry_tls.protocols_enabled,
+            ciphers=_registry_cipher_string(registry_tls),
+            require_ssl=require_ssl,
+        )
+
+    if xml_source is None:
+        return None
 
     return NormalizedTLS(
-        source=_ref(access.source),
-        protocols=None,  # Unknown — IIS TLS protocols live in the registry
+        source=xml_source,
+        protocols=None,
         ciphers=None,
         require_ssl=require_ssl,
     )
-
-
-# -- security headers -------------------------------------------------------
 
 
 def _extract_security_headers(
@@ -196,9 +197,6 @@ def _extract_security_headers(
                 )
             )
     return headers
-
-
-# -- access policy -----------------------------------------------------------
 
 
 def _extract_access_policy(
@@ -247,15 +245,25 @@ def _version_header_disclosure(
     return value == "true"
 
 
-# -- helpers -----------------------------------------------------------------
+def _registry_cipher_string(registry_tls: IISRegistryTLS) -> str | None:
+    if registry_tls.ciphers_enabled is None:
+        return None
+    return ", ".join(registry_tls.ciphers_enabled)
 
 
-def _ref(source: IISSourceRef) -> SourceRef:
+def _registry_details(registry_tls: IISRegistryTLS | None) -> str | None:
+    if registry_tls is None or not registry_tls.has_data:
+        return None
+    return registry_tls.source_details
+
+
+def _ref(source: IISSourceRef, *, details: str | None = None) -> SourceRef:
     return SourceRef(
         server_type="iis",
         file_path=source.file_path or "",
         line=source.line,
         xml_path=source.xml_path,
+        details=details,
     )
 
 

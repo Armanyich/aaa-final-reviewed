@@ -82,14 +82,29 @@ def analyze_iis(
         "--machine-config",
         help="Optional path to machine.config for IIS inheritance analysis.",
     ),
+    tls_registry: str | None = typer.Option(
+        None,
+        "--tls-registry",
+        help="Optional JSON export of Windows SChannel TLS registry settings.",
+    ),
+    no_tls_registry: bool = typer.Option(
+        False,
+        "--no-tls-registry",
+        help="Disable automatic local SChannel registry enrichment on Windows.",
+    ),
     output_format: OutputFormat = typer.Option(
         OutputFormat.text, "--format", "-f", help="Output format: text, json.",
     ),
 ) -> None:
-    if machine_config is None:
-        result = analyze_iis_config(config_path)
-    else:
-        result = analyze_iis_config(config_path, machine_config_path=machine_config)
+    kwargs: dict[str, object] = {}
+    if machine_config is not None:
+        kwargs["machine_config_path"] = machine_config
+    if tls_registry is not None:
+        kwargs["tls_registry_path"] = tls_registry
+    if no_tls_registry:
+        kwargs["use_tls_registry"] = False
+
+    result = analyze_iis_config(config_path, **kwargs)
     _output_result(result, output_format)
 
 

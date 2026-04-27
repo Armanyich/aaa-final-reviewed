@@ -64,11 +64,14 @@ def _cipher_tokens(cipher_string: str) -> list[str]:
 
 def _location(scope, config):
     src = scope.tls.source
+    details = f"server_type={config.server_type}"
+    if src.details:
+        details = f"{details}; {src.details}"
     return SourceLocation(
         mode="local",
         kind="xml" if src.xml_path else "file",
         file_path=src.file_path,
         line=src.line,
         xml_path=src.xml_path,
-        details=f"server_type={config.server_type}",
+        details=details,
     )

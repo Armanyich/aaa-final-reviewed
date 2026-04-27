@@ -31,6 +31,7 @@ _SEVERITY_ORDER: dict[str, int] = {
 _ISSUE_LEVEL_ORDER: dict[str, int] = {
     "error": 0,
     "warning": 1,
+    "info": 2,
 }
 
 _ALL_SEVERITIES: list[Severity] = ["critical", "high", "medium", "low", "info"]

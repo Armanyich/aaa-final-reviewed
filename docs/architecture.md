@@ -168,8 +168,12 @@ The Apache analyzer handles both:
 - Result metadata records the origin chain and the inheritance
   chain.
 - TLS protocol and cipher settings often live outside the XML
-  configuration (for example, in the Windows registry); the local
-  analyzer therefore does not reconstruct them fully.
+  configuration, in the Windows SChannel registry. On Windows, the
+  IIS analyzer reads local SChannel settings by default and records
+  the host name in the TLS source metadata. For copied configs or
+  offline review, `--tls-registry <path>` can supply a JSON SChannel
+  export from the target host; `--no-tls-registry` disables live
+  registry enrichment.
 
 ## 7. Normalization
 
@@ -247,8 +251,9 @@ Reporting features:
 
 - Lighttpd analysis is intentionally conservative; not all
   documented condition operators or `else if` chains are modeled.
-- IIS local analysis does not reconstruct TLS protocol and cipher
-  settings that are configured outside the XML configuration (for
-  example, in the Windows registry / SChannel).
+- IIS local analysis can enrich TLS protocol and cipher visibility
+  from the local Windows SChannel registry or an explicit JSON export.
+  Missing registry keys remain "unknown" because effective OS defaults
+  depend on the Windows version.
 - The Nginx tokenizer does not yet support single-quoted directive
   arguments.

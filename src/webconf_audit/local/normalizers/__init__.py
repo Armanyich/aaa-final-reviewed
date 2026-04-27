@@ -23,6 +23,7 @@ def normalize_config(
     effective_config: Any = None,
     doc: Any = None,
     merged_directives: Any = None,
+    registry_tls: Any = None,
 ) -> NormalizedConfig:
     """Dispatch to the appropriate server normalizer.
 
@@ -72,7 +73,11 @@ def normalize_config(
         from webconf_audit.local.normalizers.iis_normalizer import normalize_iis
 
         _require_argument("doc", doc, normalized_server_type)
-        return normalize_iis(doc, effective_config=effective_config)
+        return normalize_iis(
+            doc,
+            effective_config=effective_config,
+            registry_tls=registry_tls,
+        )
 
     # Unknown server type - return empty config.
     return NormalizedConfig(server_type=normalized_server_type)
