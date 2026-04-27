@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -559,37 +560,29 @@ def _condition_chains_contradict(
     return False
 
 
+_CONTRADICTION_HANDLERS: dict[tuple[str, str], Callable[[str, str], bool]] = {
+    ("==", "=="): lambda previous, current: previous != current,
+    ("==", "!="): lambda previous, current: previous == current,
+    ("!=", "=="): lambda previous, current: previous == current,
+    ("=^", "=^"): lambda previous, current: not _values_share_prefix(previous, current),
+    ("=$", "=$"): lambda previous, current: not _values_share_suffix(previous, current),
+    ("==", "=^"): lambda previous, current: not previous.startswith(current),
+    ("==", "=$"): lambda previous, current: not previous.endswith(current),
+    ("=^", "=="): lambda previous, current: not current.startswith(previous),
+    ("=$", "=="): lambda previous, current: not current.endswith(previous),
+}
+
+
 def _conditions_contradict(
     previous: LighttpdCondition,
     current: LighttpdCondition,
 ) -> bool:
     if previous.variable != current.variable:
         return False
-
-    if previous.operator == "==" and current.operator == "==":
-        return previous.value != current.value
-    if previous.operator == "==" and current.operator == "!=":
-        return previous.value == current.value
-    if previous.operator == "!=" and current.operator == "==":
-        return previous.value == current.value
-    if previous.operator == "=^" and current.operator == "=^":
-        return not _values_share_prefix(previous.value, current.value)
-    if previous.operator == "=$" and current.operator == "=$":
-        return not _values_share_suffix(previous.value, current.value)
-    if previous.operator == "==" and current.operator in {"=^", "=$"}:
-        return _equal_value_misses_pattern(
-            previous.value,
-            current.operator,
-            current.value,
-        )
-    if current.operator == "==" and previous.operator in {"=^", "=$"}:
-        return _equal_value_misses_pattern(
-            current.value,
-            previous.operator,
-            previous.value,
-        )
-
-    return False
+    handler = _CONTRADICTION_HANDLERS.get((previous.operator, current.operator))
+    if handler is None:
+        return False
+    return handler(previous.value, current.value)
 
 
 def _values_share_prefix(previous: str, current: str) -> bool:
@@ -598,18 +591,6 @@ def _values_share_prefix(previous: str, current: str) -> bool:
 
 def _values_share_suffix(previous: str, current: str) -> bool:
     return previous.endswith(current) or current.endswith(previous)
-
-
-def _equal_value_misses_pattern(
-    equal_value: str,
-    pattern_operator: str,
-    pattern_value: str,
-) -> bool:
-    if pattern_operator == "=^":
-        return not equal_value.startswith(pattern_value)
-    if pattern_operator == "=$":
-        return not equal_value.endswith(pattern_value)
-    return False
 
 
 def _scope_matches(
