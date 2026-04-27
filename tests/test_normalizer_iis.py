@@ -122,8 +122,10 @@ def test_tls_registry_enrichment_is_not_duplicated_into_location_scopes():
     cfg = normalize_iis(_empty_doc(), effective_config=eff, registry_tls=registry_tls)
 
     assert cfg.scopes[0].scope_name == "global"
+    assert cfg.scopes[0].tls is not None
     assert cfg.scopes[0].tls.protocols == ["TLSv1.0"]
     assert cfg.scopes[1].scope_name == "api"
+    assert cfg.scopes[1].tls is not None
     assert cfg.scopes[1].tls.protocols is None
 
 

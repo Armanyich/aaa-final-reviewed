@@ -10,6 +10,7 @@ from webconf_audit.local.iis.registry import (
     load_registry_export,
     read_live_registry,
 )
+from webconf_audit.models import AnalysisIssue
 
 
 class FakeRegistryReader:
@@ -206,7 +207,7 @@ def test_analyze_iis_config_live_registry_source_labels_host(
         registry_source: str | None = None,
         *,
         use_live_registry: bool = True,
-    ):
+    ) -> tuple[IISRegistryTLS | None, list[AnalysisIssue]]:
         assert registry_source is None
         assert use_live_registry is True
         return (
