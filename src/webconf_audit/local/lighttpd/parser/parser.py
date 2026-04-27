@@ -39,6 +39,7 @@ class LighttpdBlockNode:
     children: list["LighttpdAstNode"] = field(default_factory=list)
     source: LighttpdSourceSpan = field(default_factory=LighttpdSourceSpan)
     condition: LighttpdCondition | None = None
+    branch_kind: str = "block"
 
 
 LighttpdAstNode = LighttpdDirectiveNode | LighttpdAssignmentNode | LighttpdBlockNode
@@ -118,13 +119,19 @@ class LighttpdParser:
                         file_path=self.file_path,
                     )
 
+                condition, branch_kind = _parse_block_header(
+                    header,
+                    line=statement.line,
+                    file_path=self.file_path,
+                )
                 children = self._parse_nodes(in_block=True)
                 nodes.append(
                     LighttpdBlockNode(
                         header=header,
                         children=children,
                         source=LighttpdSourceSpan(file_path=self.file_path, line=statement.line),
-                        condition=_parse_condition(header),
+                        condition=condition,
+                        branch_kind=branch_kind,
                     )
                 )
                 continue
@@ -599,26 +606,100 @@ def _iter_unquoted_char_positions(text: str) -> Iterator[tuple[int, str]]:
 _CONDITION_PATTERN = re.compile(
     r"""
     ^
-    (\$[A-Z_]+\["[^"]*"\])   # variable: $HTTP["host"], $SERVER["socket"], etc.
+    (\$[A-Z_]+\["(?:[^"\\]|\\.)*"\])   # $HTTP["host"], $REQUEST_HEADER["..."], etc.
     \s*
-    (==|!=|=~|!~)             # operator
+    (==|!=|=~|!~|=\^|=\$)      # operator
     \s*
-    "([^"]*)"                 # value (unquoted)
+    (?:
+        "((?:[^"\\]|\\.)*)"   # double-quoted value
+      | '((?:[^'\\]|\\.)*)'   # single-quoted value
+    )
     $
     """,
     re.VERBOSE,
 )
 
 
+_ELSE_IF_PATTERN = re.compile(
+    r"^(?:else\s+if|elseif|elsif|elif|else)\s+(.+)$",
+    re.IGNORECASE,
+)
+
+_IF_PATTERN = re.compile(r"^if\s+(.+)$", re.IGNORECASE)
+
+
+def _parse_block_header(
+    header: str,
+    *,
+    line: int | None = None,
+    file_path: str | None = None,
+) -> tuple[LighttpdCondition | None, str]:
+    stripped = header.strip()
+
+    if stripped.lower() == "else":
+        return None, "else"
+
+    if_match = _IF_PATTERN.match(stripped)
+    if if_match is not None:
+        condition = _parse_condition(if_match.group(1))
+        if condition is None:
+            raise LighttpdParseError(
+                f"Invalid conditional block header: {header}",
+                line=line,
+                file_path=file_path,
+            )
+        return condition, "if"
+
+    else_if_match = _ELSE_IF_PATTERN.match(stripped)
+    if else_if_match is not None:
+        condition = _parse_condition(else_if_match.group(1))
+        if condition is None:
+            raise LighttpdParseError(
+                f"Invalid conditional block header: {header}",
+                line=line,
+                file_path=file_path,
+            )
+        return condition, "else_if"
+
+    condition = _parse_condition(stripped)
+    return condition, "if" if condition is not None else "block"
+
+
 def _parse_condition(header: str) -> LighttpdCondition | None:
     match = _CONDITION_PATTERN.match(header.strip())
     if match is None:
         return None
+    value = match.group(3) if match.group(3) is not None else match.group(4)
     return LighttpdCondition(
         variable=match.group(1),
         operator=match.group(2),
-        value=match.group(3),
+        value=_unescape_quoted_value(value or "", quote='"' if match.group(3) is not None else "'"),
     )
+
+
+def _unescape_quoted_value(value: str, *, quote: str) -> str:
+    result: list[str] = []
+    escaped = False
+
+    for char in value:
+        if escaped:
+            if char in {quote, "\\"}:
+                result.append(char)
+            else:
+                result.append(f"\\{char}")
+            escaped = False
+            continue
+
+        if char == "\\":
+            escaped = True
+            continue
+
+        result.append(char)
+
+    if escaped:
+        result.append("\\")
+
+    return "".join(result)
 
 
 __all__ = [

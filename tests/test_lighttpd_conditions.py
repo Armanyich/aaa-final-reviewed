@@ -8,6 +8,7 @@ from webconf_audit.local.lighttpd.conditions import (
     evaluate_condition,
     is_potentially_matching,
 )
+from webconf_audit.local.lighttpd import effective as lighttpd_effective
 from webconf_audit.local.lighttpd.effective import (
     LighttpdEffectiveConfig,
     LighttpdEffectiveDirective,
@@ -169,6 +170,26 @@ class TestEvaluateCondition:
         ctx = LighttpdRequestContext(remote_ip="10.0.0.5")
         assert evaluate_condition(cond, ctx) is True
 
+    def test_prefix_operator(self) -> None:
+        cond = _cond('$HTTP["url"]', "=^", "/admin")
+        ctx = LighttpdRequestContext(url_path="/admin/settings")
+        assert evaluate_condition(cond, ctx) is True
+
+    def test_suffix_operator(self) -> None:
+        cond = _cond('$HTTP["url"]', "=$", ".php")
+        ctx = LighttpdRequestContext(url_path="/index.php")
+        assert evaluate_condition(cond, ctx) is True
+
+    def test_request_header_condition_is_case_insensitive(self) -> None:
+        cond = _cond('$REQUEST_HEADER["X-Forwarded-Proto"]', "==", "https")
+        ctx = LighttpdRequestContext(request_headers={"x-forwarded-proto": "https"})
+        assert evaluate_condition(cond, ctx) is True
+
+    def test_request_method_condition(self) -> None:
+        cond = _cond('$HTTP["request-method"]', "==", "POST")
+        ctx = LighttpdRequestContext(request_method="POST")
+        assert evaluate_condition(cond, ctx) is True
+
 
 # ---------------------------------------------------------------------------
 # is_potentially_matching
@@ -328,6 +349,36 @@ class TestMergeConditionalScopes:
         merged = merge_conditional_scopes(eff, context=None)
         assert merged["server.tag"].value == '""'
 
+    def test_nested_matching_scope_overrides_prior_parent_directive(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    server.tag = "parent"\n'
+            '    $HTTP["url"] == "/x" {\n'
+            '        server.tag = "child"\n'
+            '    }\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        ctx = LighttpdRequestContext(host="a.example", url_path="/x")
+        merged = merge_conditional_scopes(eff, context=ctx)
+
+        assert merged["server.tag"].value == '"child"'
+
+    def test_parent_directive_after_nested_scope_overrides_child(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    $HTTP["url"] == "/x" {\n'
+            '        server.tag = "child"\n'
+            '    }\n'
+            '    server.tag = "parent-after"\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        ctx = LighttpdRequestContext(host="a.example", url_path="/x")
+        merged = merge_conditional_scopes(eff, context=ctx)
+
+        assert merged["server.tag"].value == '"parent-after"'
+
     def test_append_accumulates_across_scopes(self) -> None:
         cond = _cond('$HTTP["host"]', "==", "example.com")
         eff = LighttpdEffectiveConfig(
@@ -353,6 +404,252 @@ class TestMergeConditionalScopes:
         merged = merge_conditional_scopes(eff, context=None)
         assert '"mod_access"' in merged["server.modules"].value
         assert '"mod_status"' in merged["server.modules"].value
+
+    def test_worst_case_append_does_not_accumulate_unrelated_alternatives(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_a" )\n'
+            '}\n'
+            '$HTTP["host"] == "b.com" {\n'
+            '    server.modules += ( "mod_b" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_b"' in modules
+        assert '"mod_a"' not in modules
+
+    def test_worst_case_append_accumulates_same_condition_scopes(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_a" )\n'
+            '}\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_b" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_a"' in modules
+        assert '"mod_b"' in modules
+
+    def test_worst_case_append_preserves_compatible_scopes_around_alternatives(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_a1" )\n'
+            '}\n'
+            '$HTTP["host"] == "b.com" {\n'
+            '    server.modules += ( "mod_b" )\n'
+            '}\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_a2" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_a1"' in modules
+        assert '"mod_a2"' in modules
+        assert '"mod_b"' not in modules
+
+    def test_concrete_context_append_accumulates_multiple_matching_scopes(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_host" )\n'
+            '}\n'
+            '$REQUEST_HEADER["X-Feature"] == "on" {\n'
+            '    server.modules += ( "mod_feature" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        ctx = LighttpdRequestContext(
+            host="a.com",
+            request_headers={"x-feature": "on"},
+        )
+        merged = merge_conditional_scopes(eff, context=ctx)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_host"' in modules
+        assert '"mod_feature"' in modules
+
+    def test_worst_case_append_accumulates_independent_nested_sibling_scopes(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    $HTTP["url"] == "/admin" {\n'
+            '        server.modules += ( "mod_admin" )\n'
+            '    }\n'
+            '    $REQUEST_HEADER["X-Feature"] == "on" {\n'
+            '        server.modules += ( "mod_feature" )\n'
+            '    }\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_admin"' in modules
+        assert '"mod_feature"' in modules
+
+    def test_worst_case_append_does_not_merge_impossible_prefix_conditions(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["url"] =^ "/admin" {\n'
+            '    server.modules += ( "mod_admin" )\n'
+            '}\n'
+            '$HTTP["url"] =^ "/api" {\n'
+            '    server.modules += ( "mod_api" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_api"' in modules
+        assert '"mod_admin"' not in modules
+
+    def test_worst_case_append_does_not_merge_impossible_suffix_conditions(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["url"] =$ ".php" {\n'
+            '    server.modules += ( "mod_php" )\n'
+            '}\n'
+            '$HTTP["url"] =$ ".html" {\n'
+            '    server.modules += ( "mod_html" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_html"' in modules
+        assert '"mod_php"' not in modules
+
+    def test_worst_case_append_merges_equal_value_matching_prefix_condition(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["url"] == "/admin/settings" {\n'
+            '    server.modules += ( "mod_exact" )\n'
+            '}\n'
+            '$HTTP["url"] =^ "/admin" {\n'
+            '    server.modules += ( "mod_prefix" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_exact"' in modules
+        assert '"mod_prefix"' in modules
+
+    def test_worst_case_append_does_not_merge_equal_value_missing_suffix_condition(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["url"] == "/admin/settings" {\n'
+            '    server.modules += ( "mod_exact" )\n'
+            '}\n'
+            '$HTTP["url"] =$ ".php" {\n'
+            '    server.modules += ( "mod_php" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_php"' in modules
+        assert '"mod_exact"' not in modules
+
+    def test_worst_case_append_does_not_merge_if_else_branches(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_host" )\n'
+            '}\n'
+            'else {\n'
+            '    server.modules += ( "mod_else" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_else"' in modules
+        assert '"mod_host"' not in modules
+
+    def test_worst_case_append_uses_compatible_conditional_assignment_base(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules = ( "mod_base" )\n'
+            '}\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_extra" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_base"' in modules
+        assert '"mod_extra"' in modules
+
+    def test_worst_case_append_detects_contradiction_in_reordered_condition_chains(
+        self,
+    ) -> None:
+        # Two scopes share host=a.com and X-Feature=on but pin different urls
+        # at different nesting depths.  A pairwise comparison must catch the
+        # url contradiction even though the chains line up url against header
+        # when zipped positionally.
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    $HTTP["url"] == "/x" {\n'
+            '        $REQUEST_HEADER["X-Feature"] == "on" {\n'
+            '            server.modules += ( "mod_x" )\n'
+            '        }\n'
+            '    }\n'
+            '}\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    $REQUEST_HEADER["X-Feature"] == "on" {\n'
+            '        $HTTP["url"] == "/y" {\n'
+            '            server.modules += ( "mod_y" )\n'
+            '        }\n'
+            '    }\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_y"' in modules
+        assert '"mod_x"' not in modules
+
+    def test_source_before_requires_matching_file_path_presence(self) -> None:
+        previous = LighttpdSourceSpan(file_path=None, line=1)
+        current = LighttpdSourceSpan(file_path="test.conf", line=2)
+
+        # Internal helper coverage is intentional here: these spans exercise
+        # the missing-file-path ordering edge case directly.
+        assert not lighttpd_effective._source_before(previous, current)
 
     def test_multiple_scopes_last_wins(self) -> None:
         cond1 = _cond('$HTTP["host"]', "==", "a.com")
@@ -545,8 +842,8 @@ class TestNestedConditionChain:
             '}\n',
         )
         eff = build_effective_config(ast)
-        # There should be 2 scopes: the nested one and the parent.
-        # The nested scope (first due to recursion order) has 2 conditions.
+        # There should be 2 scopes: the parent and the nested one.
+        # The nested scope has 2 conditions.
         nested = [s for s in eff.conditional_scopes if len(s.conditions) == 2]
         assert len(nested) == 1
         assert nested[0].conditions[0].variable == '$HTTP["host"]'
@@ -619,6 +916,88 @@ class TestElseBranchHandling:
         if_scopes = [s for s in eff.conditional_scopes if not s.is_else]
         assert len(if_scopes) == 1
         assert else_scopes[0].sibling_if_index >= 0
+
+    def test_else_if_chain_selects_first_deterministic_match(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    server.tag = "A"\n'
+            '}\n'
+            'elseif $HTTP["host"] == "b.example" {\n'
+            '    server.tag = "B"\n'
+            '}\n'
+            'else {\n'
+            '    server.tag = "fallback"\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+
+        merged_a = merge_conditional_scopes(eff, context=LighttpdRequestContext(host="a.example"))
+        merged_b = merge_conditional_scopes(eff, context=LighttpdRequestContext(host="b.example"))
+        merged_c = merge_conditional_scopes(eff, context=LighttpdRequestContext(host="c.example"))
+
+        assert merged_a["server.tag"].value == '"A"'
+        assert merged_b["server.tag"].value == '"B"'
+        assert merged_c["server.tag"].value == '"fallback"'
+
+    def test_else_if_scope_tracks_previous_chain_branches(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    server.tag = "A"\n'
+            '}\n'
+            'else if $HTTP["host"] == "b.example" {\n'
+            '    server.tag = "B"\n'
+            '}\n'
+            'else {\n'
+            '    server.tag = "fallback"\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+
+        else_if_scopes = [s for s in eff.conditional_scopes if s.is_else_if]
+        else_scopes = [s for s in eff.conditional_scopes if s.is_else]
+        assert len(else_if_scopes) == 1
+        assert len(else_scopes) == 1
+        assert len(else_if_scopes[0].previous_branch_indices) == 1
+        assert len(else_scopes[0].previous_branch_indices) == 2
+
+    def test_top_level_directive_breaks_else_chain(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    server.tag = "A"\n'
+            '}\n'
+            'include "break.conf"\n'
+            'else {\n'
+            '    server.tag = "fallback"\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=LighttpdRequestContext(host="a.example"))
+
+        else_scopes = [s for s in eff.conditional_scopes if s.is_else]
+        assert len(else_scopes) == 1
+        assert else_scopes[0].previous_branch_indices == ()
+        assert merged["server.tag"].value == '"fallback"'
+
+    def test_nested_directive_breaks_else_chain(self) -> None:
+        ast = parse_lighttpd_config(
+            '$HTTP["host"] == "a.example" {\n'
+            '    $HTTP["url"] == "/admin" {\n'
+            '        server.tag = "admin"\n'
+            '    }\n'
+            '    include "break.conf"\n'
+            '    else {\n'
+            '        server.tag = "fallback"\n'
+            '    }\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        ctx = LighttpdRequestContext(host="a.example", url_path="/admin")
+        merged = merge_conditional_scopes(eff, context=ctx)
+
+        nested_else_scopes = [s for s in eff.conditional_scopes if s.is_else]
+        assert len(nested_else_scopes) == 1
+        assert nested_else_scopes[0].previous_branch_indices == ()
+        assert merged["server.tag"].value == '"fallback"'
 
 
 # ---------------------------------------------------------------------------

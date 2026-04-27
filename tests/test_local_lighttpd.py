@@ -262,6 +262,26 @@ def test_parse_condition_unrecognized_header_has_no_condition() -> None:
     assert block.condition is None
 
 
+def test_parse_explicit_if_with_invalid_condition_errors() -> None:
+    with pytest.raises(LighttpdParseError, match="Invalid conditional block header: if"):
+        parse_lighttpd_config(
+            "if some_custom_block {\n"
+            "    server.port = 8080\n"
+            "}\n",
+            file_path="lighttpd.conf",
+        )
+
+
+def test_parse_explicit_else_if_with_invalid_condition_errors() -> None:
+    with pytest.raises(LighttpdParseError, match="Invalid conditional block header: elseif"):
+        parse_lighttpd_config(
+            "elseif some_custom_block {\n"
+            "    server.port = 8080\n"
+            "}\n",
+            file_path="lighttpd.conf",
+        )
+
+
 def test_parse_condition_existing_block_test_still_works() -> None:
     """Existing test: condition parsing does not break header field."""
     ast = parse_lighttpd_config(
@@ -275,6 +295,62 @@ def test_parse_condition_existing_block_test_still_works() -> None:
     assert block.header == '$HTTP["host"] == "example.test"'
     assert block.condition is not None
     assert block.condition.variable == '$HTTP["host"]'
+
+
+def test_parse_condition_prefix_suffix_and_request_header() -> None:
+    ast = parse_lighttpd_config(
+        '$REQUEST_HEADER["X-Forwarded-Proto"] =^ "https" {\n'
+        '    ssl.engine = "enable"\n'
+        '}\n'
+        '$HTTP["url"] =$ ".php" {\n'
+        '    cgi.assign = ( ".php" => "/usr/bin/php-cgi" )\n'
+        '}\n',
+    )
+
+    first = ast.nodes[0]
+    second = ast.nodes[1]
+    assert isinstance(first, LighttpdBlockNode)
+    assert isinstance(second, LighttpdBlockNode)
+    assert first.condition == LighttpdCondition(
+        variable='$REQUEST_HEADER["X-Forwarded-Proto"]',
+        operator="=^",
+        value="https",
+    )
+    assert second.condition == LighttpdCondition(
+        variable='$HTTP["url"]',
+        operator="=$",
+        value=".php",
+    )
+
+
+def test_parse_else_if_branch_forms() -> None:
+    ast = parse_lighttpd_config(
+        '$HTTP["host"] == "a.test" {\n'
+        '    server.tag = "a"\n'
+        '}\n'
+        'elseif $HTTP["host"] == "b.test" {\n'
+        '    server.tag = "b"\n'
+        '}\n'
+        'elsif $HTTP["host"] == "c.test" {\n'
+        '    server.tag = "c"\n'
+        '}\n'
+        'else if $HTTP["host"] == "d.test" {\n'
+        '    server.tag = "d"\n'
+        '}\n'
+        'else $HTTP["host"] == "e.test" {\n'
+        '    server.tag = "e"\n'
+        '}\n',
+    )
+
+    blocks = [node for node in ast.nodes if isinstance(node, LighttpdBlockNode)]
+    assert [block.branch_kind for block in blocks] == [
+        "if",
+        "else_if",
+        "else_if",
+        "else_if",
+        "else_if",
+    ]
+    assert all(block.condition is not None for block in blocks)
 
 
 # ---------------------------------------------------------------------------
@@ -388,6 +464,59 @@ def test_expand_variables_unescapes_quoted_string_tokens() -> None:
     assignment = ast.nodes[1]
     assert isinstance(assignment, LighttpdAssignmentNode)
     assert assignment.value == '"/srv/\\"quoted\\"/a\\\\b"'
+
+
+def test_expand_variables_env_reference() -> None:
+    ast = parse_lighttpd_config(
+        'server.document-root = env.LIGHTTPD_ROOT + "/htdocs"\n',
+    )
+
+    issues = expand_variables(ast, environ={"LIGHTTPD_ROOT": "/srv/www"})
+
+    assert issues == []
+    assignment = ast.nodes[0]
+    assert isinstance(assignment, LighttpdAssignmentNode)
+    assert assignment.value == '"/srv/www/htdocs"'
+
+
+def test_expand_variables_builtin_cwd(tmp_path: Path) -> None:
+    config_path = tmp_path / "lighttpd.conf"
+    ast = parse_lighttpd_config(
+        'server.document-root = var.CWD + "/htdocs"\n',
+        file_path=str(config_path),
+    )
+
+    issues = expand_variables(ast)
+
+    assert issues == []
+    assignment = ast.nodes[0]
+    assert isinstance(assignment, LighttpdAssignmentNode)
+    assert assignment.value == _quote(str(tmp_path) + "/htdocs")
+
+
+def test_expand_variables_builtin_pid_can_be_overridden_for_deterministic_tests() -> None:
+    ast = parse_lighttpd_config(
+        'server.pid-file = "/run/lighttpd-" + var.PID + ".pid"\n',
+    )
+
+    issues = expand_variables(ast, builtins={"var.PID": "1234"})
+
+    assert issues == []
+    assignment = ast.nodes[0]
+    assert isinstance(assignment, LighttpdAssignmentNode)
+    assert assignment.value == '"/run/lighttpd-1234.pid"'
+
+
+def test_expand_variables_missing_env_reference_reports_issue() -> None:
+    ast = parse_lighttpd_config(
+        'server.document-root = env.MISSING_ROOT + "/htdocs"\n',
+    )
+
+    issues = expand_variables(ast, environ={})
+
+    assert len(issues) == 1
+    assert issues[0].code == "lighttpd_undefined_variable"
+    assert "env.MISSING_ROOT" in issues[0].message
 
 
 def test_expand_variables_integration_rules_see_expanded_values(tmp_path: Path) -> None:
@@ -549,15 +678,18 @@ def test_effective_config_nested_block_becomes_separate_scope() -> None:
         "}\n",
     )
     eff = build_effective_config(ast)
-    # Two scopes: the nested url block + the outer host block.
+    # Two scopes: the outer host block + the nested url block.
     assert len(eff.conditional_scopes) == 2
     # Nested block has its own scope with its own directive.
-    url_scope = eff.conditional_scopes[0]
+    url_scope = next(
+        scope
+        for scope in eff.conditional_scopes
+        if scope.condition is not None and scope.condition.operator == "=~"
+    )
     assert url_scope.condition is not None
-    assert url_scope.condition.operator == "=~"
     assert "server.tag" in url_scope.directives
     # Parent block has only its direct assignment.
-    host_scope = eff.conditional_scopes[1]
+    host_scope = eff.conditional_scopes[0]
     assert host_scope.condition is not None
     assert host_scope.condition.variable == '$HTTP["host"]'
     assert "server.port" in host_scope.directives
@@ -577,12 +709,14 @@ def test_effective_config_sibling_nested_conditions_stay_separate() -> None:
         "}\n",
     )
     eff = build_effective_config(ast)
-    # Three scopes: two nested url blocks + one parent host block.
+    # Three scopes: one parent host block + two nested url blocks.
     assert len(eff.conditional_scopes) == 3
-    api_scope = eff.conditional_scopes[0]
-    admin_scope = eff.conditional_scopes[1]
-    assert api_scope.directives["server.tag"].value == '"api"'
-    assert admin_scope.directives["server.tag"].value == '"admin"'
+    nested_values = [
+        scope.directives["server.tag"].value
+        for scope in eff.conditional_scopes
+        if "server.tag" in scope.directives
+    ]
+    assert nested_values == ['"api"', '"admin"']
 
 
 def test_effective_config_source_location_preserved() -> None:
@@ -856,6 +990,13 @@ def test_analyze_lighttpd_config_executes_include_shell_when_enabled(
     assert dir_findings[0].location is not None
     assert dir_findings[0].location.file_path == "shell:generate-config"
     assert result.issues == []
+    assert result.metadata["load_context"]["edges"] == [
+        {
+            "source_file": str(config_path),
+            "source_line": 1,
+            "target_file": "shell:generate-config",
+        }
+    ]
 
 
 def test_analyze_lighttpd_config_detects_shell_include_cycle(

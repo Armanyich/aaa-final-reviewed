@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import os
 import re
+from collections.abc import Mapping
+from pathlib import Path
 
 from webconf_audit.local.lighttpd.parser import (
     LighttpdAssignmentNode,
@@ -11,6 +14,7 @@ from webconf_audit.local.lighttpd.parser import (
 from webconf_audit.models import AnalysisIssue, SourceLocation
 
 _VAR_PREFIX = "var."
+_ENV_PREFIX = "env."
 
 # Matches a single token in a concatenation expression:
 # either a quoted string ("..." or '...') or a bare identifier (var.name).
@@ -28,38 +32,60 @@ _CONCAT_TOKEN = re.compile(
 )
 
 
-def expand_variables(config_ast: LighttpdConfigAst) -> list[AnalysisIssue]:
-    variables: dict[str, str] = {}
+def expand_variables(
+    config_ast: LighttpdConfigAst,
+    *,
+    environ: Mapping[str, str] | None = None,
+    builtins: Mapping[str, str] | None = None,
+) -> list[AnalysisIssue]:
+    variables: dict[str, str] = _builtin_variables(config_ast)
+    if builtins is not None:
+        variables.update(builtins)
+    environment = os.environ if environ is None else environ
     issues: list[AnalysisIssue] = []
-    _expand_nodes(config_ast.nodes, variables, issues)
+    _expand_nodes(config_ast.nodes, variables, environment, issues)
     return issues
+
+
+def _builtin_variables(config_ast: LighttpdConfigAst) -> dict[str, str]:
+    cwd = (
+        str(Path(config_ast.main_file_path).resolve().parent)
+        if config_ast.main_file_path is not None
+        else str(Path.cwd())
+    )
+    return {
+        "var.CWD": cwd,
+        "var.PID": str(os.getpid()),
+    }
 
 
 def _expand_nodes(
     nodes: list[LighttpdAstNode],
     variables: dict[str, str],
+    environ: Mapping[str, str],
     issues: list[AnalysisIssue],
 ) -> None:
     for node in nodes:
         if isinstance(node, LighttpdBlockNode):
-            _expand_nodes(node.children, variables, issues)
+            _expand_nodes(node.children, variables, environ, issues)
             continue
 
         if not isinstance(node, LighttpdAssignmentNode):
             continue
 
         if node.name.startswith(_VAR_PREFIX):
-            _collect_variable(node, variables, issues)
+            _collect_variable(node, variables, environ, issues)
         else:
-            _expand_value(node, variables, issues)
+            _expand_value(node, variables, environ, issues)
 
 
 def _collect_variable(
     node: LighttpdAssignmentNode,
     variables: dict[str, str],
+    environ: Mapping[str, str],
     issues: list[AnalysisIssue],
 ) -> None:
-    resolved = _resolve_expression(node.value, variables, node, issues)
+    resolved = _resolve_expression(node.value, variables, environ, node, issues)
     if resolved is None:
         return
 
@@ -75,18 +101,19 @@ def _collect_variable(
 def _expand_value(
     node: LighttpdAssignmentNode,
     variables: dict[str, str],
+    environ: Mapping[str, str],
     issues: list[AnalysisIssue],
 ) -> None:
     if not _references_variable(node.value):
         return
 
-    resolved = _resolve_expression(node.value, variables, node, issues)
+    resolved = _resolve_expression(node.value, variables, environ, node, issues)
     if resolved is not None:
         node.value = _quote(resolved)
 
 
 def _references_variable(value: str) -> bool:
-    return _VAR_PREFIX in value
+    return _VAR_PREFIX in value or _ENV_PREFIX in value
 
 
 def _unescape_quoted_string(value: str, *, quote: str) -> str:
@@ -117,6 +144,7 @@ def _unescape_quoted_string(value: str, *, quote: str) -> str:
 def _resolve_expression(
     expression: str,
     variables: dict[str, str],
+    environ: Mapping[str, str],
     node: LighttpdAssignmentNode,
     issues: list[AnalysisIssue],
 ) -> str | None:
@@ -143,20 +171,15 @@ def _resolve_expression(
         elif bare_ident is not None:
             if bare_ident in variables:
                 parts.append(variables[bare_ident])
+            elif bare_ident.startswith(_ENV_PREFIX):
+                env_name = bare_ident[len(_ENV_PREFIX) :]
+                if env_name in environ:
+                    parts.append(environ[env_name])
+                else:
+                    _append_undefined_issue(bare_ident, node, issues)
+                    return None
             elif bare_ident.startswith(_VAR_PREFIX):
-                issues.append(
-                    AnalysisIssue(
-                        code="lighttpd_undefined_variable",
-                        level="warning",
-                        message=f"Undefined variable reference: {bare_ident}",
-                        location=SourceLocation(
-                            mode="local",
-                            kind="file",
-                            file_path=node.source.file_path,
-                            line=node.source.line,
-                        ),
-                    )
-                )
+                _append_undefined_issue(bare_ident, node, issues)
                 return None
             else:
                 # Bare identifier that is not a var.* reference — not expandable.
@@ -173,6 +196,26 @@ def _resolve_expression(
             return None
 
     return "".join(parts)
+
+
+def _append_undefined_issue(
+    name: str,
+    node: LighttpdAssignmentNode,
+    issues: list[AnalysisIssue],
+) -> None:
+    issues.append(
+        AnalysisIssue(
+            code="lighttpd_undefined_variable",
+            level="warning",
+            message=f"Undefined variable reference: {name}",
+            location=SourceLocation(
+                mode="local",
+                kind="file",
+                file_path=node.source.file_path,
+                line=node.source.line,
+            ),
+        )
+    )
 
 
 def _quote(value: str) -> str:
