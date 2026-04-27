@@ -177,6 +177,11 @@ checks is provided in `demo/local_admin/`. See
 [demo/local_admin/README.md](demo/local_admin/README.md) for the
 full walkthrough.
 
+## Roadmap
+
+The current development plan is tracked in
+[docs/roadmap.md](docs/roadmap.md).
+
 ## Development
 
 Run the tests:
