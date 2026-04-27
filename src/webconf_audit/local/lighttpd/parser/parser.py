@@ -662,7 +662,7 @@ def _unescape_quoted_value(value: str, *, quote: str) -> str:
 
     for char in value:
         if escaped:
-            if char == quote or char == "\\":
+            if char in {quote, "\\"}:
                 result.append(char)
             else:
                 result.append(f"\\{char}")

@@ -351,9 +351,12 @@ def _scope_matches(
     branch_indices = scope.previous_branch_indices
     if not branch_indices and scope.is_else and scope.sibling_if_index >= 0:
         branch_indices = (scope.sibling_if_index,)
-    if (scope.is_else or scope.is_else_if) and branch_indices:
-        if any(scope_deterministic[index] for index in branch_indices):
-            return False
+    if (
+        (scope.is_else or scope.is_else_if)
+        and branch_indices
+        and any(scope_deterministic[index] for index in branch_indices)
+    ):
+        return False
 
     # Check the full condition chain (all ancestors + own condition).
     # When ``conditions`` is empty (e.g. manually constructed scope),
