@@ -290,22 +290,22 @@ def merge_conditional_scopes(
     scope_deterministic: list[bool] = [
         _is_deterministic_match(s, context) for s in scopes
     ]
+    append_accumulators: dict[str, list[LighttpdEffectiveDirective]] = {}
 
     for scope in scopes:
         if not _scope_matches(scope, scope_deterministic, context):
             continue
         for name, directive in scope.directives.items():
-            if directive.operator == "+=" and name in merged:
+            if directive.operator == "+=" and context is None:
+                merged[name] = _merge_worst_case_append(
+                    name,
+                    directive,
+                    effective_config,
+                    append_accumulators,
+                )
+            elif directive.operator == "+=" and name in merged:
                 prev = merged[name]
-                base = effective_config.global_directives.get(name)
-                if context is None and not _append_scope_compatible(prev, directive):
-                    merged_value = (
-                        _merge_append(base.value, directive.value)
-                        if base is not None
-                        else directive.value
-                    )
-                else:
-                    merged_value = _merge_append(prev.value, directive.value)
+                merged_value = _merge_append(prev.value, directive.value)
                 merged[name] = LighttpdEffectiveDirective(
                     name=name,
                     value=merged_value,
@@ -319,6 +319,51 @@ def merge_conditional_scopes(
                 merged[name] = directive
 
     return merged
+
+
+def _merge_worst_case_append(
+    name: str,
+    directive: LighttpdEffectiveDirective,
+    effective_config: LighttpdEffectiveConfig,
+    append_accumulators: dict[str, list[LighttpdEffectiveDirective]],
+) -> LighttpdEffectiveDirective:
+    accumulators = append_accumulators.setdefault(name, [])
+    compatible_index = _append_compatible_index(accumulators, directive)
+    if compatible_index is not None:
+        prev_value = accumulators[compatible_index].value
+    else:
+        base = effective_config.global_directives.get(name)
+        prev_value = base.value if base is not None else None
+
+    merged_value = (
+        _merge_append(prev_value, directive.value)
+        if prev_value is not None
+        else directive.value
+    )
+    merged = LighttpdEffectiveDirective(
+        name=name,
+        value=merged_value,
+        operator="+=",
+        scope="merged",
+        condition=directive.condition,
+        source=directive.source,
+        conditions=directive.conditions,
+    )
+    if compatible_index is None:
+        accumulators.append(merged)
+    else:
+        accumulators[compatible_index] = merged
+    return merged
+
+
+def _append_compatible_index(
+    accumulators: list[LighttpdEffectiveDirective],
+    current: LighttpdEffectiveDirective,
+) -> int | None:
+    for index in range(len(accumulators) - 1, -1, -1):
+        if _append_scope_compatible(accumulators[index], current):
+            return index
+    return None
 
 
 def _append_scope_compatible(

@@ -410,6 +410,28 @@ class TestMergeConditionalScopes:
         assert '"mod_a"' in modules
         assert '"mod_b"' in modules
 
+    def test_worst_case_append_preserves_compatible_scopes_around_alternatives(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_a1" )\n'
+            '}\n'
+            '$HTTP["host"] == "b.com" {\n'
+            '    server.modules += ( "mod_b" )\n'
+            '}\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    server.modules += ( "mod_a2" )\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_a1"' in modules
+        assert '"mod_a2"' in modules
+        assert '"mod_b"' not in modules
+
     def test_concrete_context_append_accumulates_multiple_matching_scopes(self) -> None:
         ast = parse_lighttpd_config(
             'server.modules = ( "mod_access" )\n'
