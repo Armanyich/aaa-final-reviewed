@@ -60,7 +60,7 @@ def test_fingerprint_changes_for_rule_server_and_location_changes() -> None:
 
 
 def test_fingerprint_normalizes_paths_and_scope_metadata() -> None:
-    finding = _finding(file_path=r"C:\repo\nginx\conf.d\.\site.conf")
+    finding = _finding(file_path=r"conf.d\.\site.conf")
     finding.metadata["host"] = "  EXAMPLE.com  "
 
     components = finding_fingerprint_components(_result(), finding)
