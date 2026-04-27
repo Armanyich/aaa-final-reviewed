@@ -370,19 +370,37 @@ def _append_scope_compatible(
     previous: LighttpdEffectiveDirective,
     current: LighttpdEffectiveDirective,
 ) -> bool:
-    if not previous.conditions or not current.conditions:
-        return True
-    return _is_condition_prefix(previous.conditions, current.conditions) or _is_condition_prefix(
-        current.conditions,
-        previous.conditions,
-    )
+    return not _condition_chains_contradict(previous.conditions, current.conditions)
 
 
-def _is_condition_prefix(
-    maybe_prefix: tuple[LighttpdCondition | None, ...],
-    chain: tuple[LighttpdCondition | None, ...],
+def _condition_chains_contradict(
+    previous: tuple[LighttpdCondition | None, ...],
+    current: tuple[LighttpdCondition | None, ...],
 ) -> bool:
-    return len(maybe_prefix) <= len(chain) and chain[: len(maybe_prefix)] == maybe_prefix
+    for previous_condition, current_condition in zip(previous, current, strict=False):
+        if previous_condition == current_condition:
+            continue
+        if previous_condition is None or current_condition is None:
+            return False
+        return _conditions_contradict(previous_condition, current_condition)
+    return False
+
+
+def _conditions_contradict(
+    previous: LighttpdCondition,
+    current: LighttpdCondition,
+) -> bool:
+    if previous.variable != current.variable:
+        return False
+
+    if previous.operator == "==" and current.operator == "==":
+        return previous.value != current.value
+    if previous.operator == "==" and current.operator == "!=":
+        return previous.value == current.value
+    if previous.operator == "!=" and current.operator == "==":
+        return previous.value == current.value
+
+    return False
 
 
 def _scope_matches(

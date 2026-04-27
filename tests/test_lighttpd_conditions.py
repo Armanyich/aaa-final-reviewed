@@ -454,6 +454,26 @@ class TestMergeConditionalScopes:
         assert '"mod_host"' in modules
         assert '"mod_feature"' in modules
 
+    def test_worst_case_append_accumulates_independent_nested_sibling_scopes(self) -> None:
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    $HTTP["url"] == "/admin" {\n'
+            '        server.modules += ( "mod_admin" )\n'
+            '    }\n'
+            '    $REQUEST_HEADER["X-Feature"] == "on" {\n'
+            '        server.modules += ( "mod_feature" )\n'
+            '    }\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_admin"' in modules
+        assert '"mod_feature"' in modules
+
     def test_multiple_scopes_last_wins(self) -> None:
         cond1 = _cond('$HTTP["host"]', "==", "a.com")
         cond2 = _cond('$HTTP["host"]', "==", "b.com")
