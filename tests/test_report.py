@@ -329,6 +329,8 @@ class TestJsonFormatter:
         findings = parsed["results"][0]["findings"]
         assert len(findings) == 1
         assert findings[0]["rule_id"] == "x.rule"
+        assert len(findings[0]["fingerprint"]) == 64
+        assert parsed["findings"][0]["fingerprint"] == findings[0]["fingerprint"]
 
     def test_json_empty_report(self) -> None:
         out = JsonFormatter().format(ReportData(results=[]))
