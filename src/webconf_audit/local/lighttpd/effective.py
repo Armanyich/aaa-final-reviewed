@@ -545,12 +545,17 @@ def _condition_chains_contradict(
     previous: tuple[LighttpdCondition | None, ...],
     current: tuple[LighttpdCondition | None, ...],
 ) -> bool:
-    for previous_condition, current_condition in zip(previous, current, strict=False):
-        if previous_condition == current_condition:
+    # Compare every concrete condition pair across both chains: a contradiction
+    # on any shared variable means the scopes are mutually exclusive, even when
+    # the chains nest the same variables in a different order.
+    for previous_condition in previous:
+        if previous_condition is None:
             continue
-        if previous_condition is None or current_condition is None:
-            return False
-        return _conditions_contradict(previous_condition, current_condition)
+        for current_condition in current:
+            if current_condition is None:
+                continue
+            if _conditions_contradict(previous_condition, current_condition):
+                return True
     return False
 
 

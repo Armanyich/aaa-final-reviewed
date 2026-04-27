@@ -611,6 +611,38 @@ class TestMergeConditionalScopes:
         assert '"mod_base"' in modules
         assert '"mod_extra"' in modules
 
+    def test_worst_case_append_detects_contradiction_in_reordered_condition_chains(
+        self,
+    ) -> None:
+        # Two scopes share host=a.com and X-Feature=on but pin different urls
+        # at different nesting depths.  A pairwise comparison must catch the
+        # url contradiction even though the chains line up url against header
+        # when zipped positionally.
+        ast = parse_lighttpd_config(
+            'server.modules = ( "mod_access" )\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    $HTTP["url"] == "/x" {\n'
+            '        $REQUEST_HEADER["X-Feature"] == "on" {\n'
+            '            server.modules += ( "mod_x" )\n'
+            '        }\n'
+            '    }\n'
+            '}\n'
+            '$HTTP["host"] == "a.com" {\n'
+            '    $REQUEST_HEADER["X-Feature"] == "on" {\n'
+            '        $HTTP["url"] == "/y" {\n'
+            '            server.modules += ( "mod_y" )\n'
+            '        }\n'
+            '    }\n'
+            '}\n',
+        )
+        eff = build_effective_config(ast)
+        merged = merge_conditional_scopes(eff, context=None)
+
+        modules = merged["server.modules"].value
+        assert '"mod_access"' in modules
+        assert '"mod_y"' in modules
+        assert '"mod_x"' not in modules
+
     def test_source_before_requires_matching_file_path_presence(self) -> None:
         previous = LighttpdSourceSpan(file_path=None, line=1)
         current = LighttpdSourceSpan(file_path="test.conf", line=2)
