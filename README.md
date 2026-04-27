@@ -177,16 +177,30 @@ checks is provided in `demo/local_admin/`. See
 [demo/local_admin/README.md](demo/local_admin/README.md) for the
 full walkthrough.
 
+## Roadmap
+
+The current development plan is tracked in
+[docs/roadmap.md](docs/roadmap.md).
+
 ## Development
 
-Run the tests:
+Install the development dependency group:
 
 ```bash
-pytest -q
+uv sync --group dev --locked
 ```
 
-Lint:
+Run the same fast checks as the pull-request CI workflow:
 
 ```bash
-ruff check .
+uv run --locked ruff check .
+uv run --locked python -m compileall -q src
+uv run --locked pytest tests --ignore=tests/integration_external --ignore=tests/integration_local --ignore=tests/integration_rule_coverage -q
+uv run --locked webconf-audit list-rules
+```
+
+Run the Docker-backed integration slice when Docker Engine is available:
+
+```bash
+uv run --locked pytest tests/integration_external tests/integration_local tests/integration_rule_coverage -q
 ```

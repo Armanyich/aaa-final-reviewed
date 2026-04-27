@@ -18,5 +18,16 @@ dependencies = [
 [project.scripts]
 webconf-audit = "webconf_audit.cli:app"
 
+[build-system]
+requires = ["hatchling>=1.28,<2"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3,<10",
+    "ruff>=0.15.12,<1",
+]
+
 [tool.ruff]
 line-length = 100
+exclude = [".tmp"]
