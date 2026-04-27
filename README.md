@@ -187,20 +187,20 @@ The current development plan is tracked in
 Install the development dependency group:
 
 ```bash
-uv sync --group dev
+uv sync --group dev --locked
 ```
 
 Run the same fast checks as the pull-request CI workflow:
 
 ```bash
-uv run ruff check .
-uv run python -m compileall -q src
-uv run pytest tests --ignore=tests/integration_external --ignore=tests/integration_local --ignore=tests/integration_rule_coverage -q
-uv run webconf-audit list-rules
+uv run --locked ruff check .
+uv run --locked python -m compileall -q src
+uv run --locked pytest tests --ignore=tests/integration_external --ignore=tests/integration_local --ignore=tests/integration_rule_coverage -q
+uv run --locked webconf-audit list-rules
 ```
 
 Run the Docker-backed integration slice when Docker Engine is available:
 
 ```bash
-uv run pytest tests/integration_external tests/integration_local tests/integration_rule_coverage -q
+uv run --locked pytest tests/integration_external tests/integration_local tests/integration_rule_coverage -q
 ```
