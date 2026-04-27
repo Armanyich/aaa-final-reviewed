@@ -615,6 +615,8 @@ class TestMergeConditionalScopes:
         previous = LighttpdSourceSpan(file_path=None, line=1)
         current = LighttpdSourceSpan(file_path="test.conf", line=2)
 
+        # Internal helper coverage is intentional here: these spans exercise
+        # the missing-file-path ordering edge case directly.
         assert not lighttpd_effective._source_before(previous, current)
 
     def test_multiple_scopes_last_wins(self) -> None:

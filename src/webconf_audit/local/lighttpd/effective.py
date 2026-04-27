@@ -189,6 +189,8 @@ def _collect_block(
             )
             if not nested_branch_chain:
                 nested_branch_chain_id = None
+            # End the current direct-scope segment after _collect_block();
+            # _apply_assignment will create the next one if assignments follow.
             current_directives = None
         else:
             if isinstance(child, LighttpdAssignmentNode):
@@ -511,9 +513,9 @@ def _append_compatible_index(
     accumulators: list[LighttpdEffectiveDirective],
     current: LighttpdEffectiveDirective,
 ) -> int | None:
-    for index in range(len(accumulators) - 1, -1, -1):
-        if _append_scope_compatible(accumulators[index], current):
-            return index
+    for offset, accumulator in enumerate(reversed(accumulators)):
+        if _append_scope_compatible(accumulator, current):
+            return len(accumulators) - 1 - offset
     return None
 
 
