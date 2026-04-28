@@ -651,10 +651,11 @@ Mapping rationale (external probes), grouped by pattern:
   (`env_file_exposed`, `htaccess_exposed`, `web_config_exposed`) -- CWE-538
   (file/directory information exposure);
   (`htpasswd_exposed`) -- CWE-522 (insufficiently protected credentials),
-  OWASP A07. `external.wordpress_admin_panel_exposed` is operational
-  guidance for an exposed WordPress admin panel, not a weakness class -- CWE
-  empty, OWASP A05. `robots_txt_exposed` and `sitemap_xml_exposed` are
-  public-by-design and stay empty for both CWE and OWASP.
+  OWASP A07;
+  (`external.wordpress_admin_panel_exposed`) -- operational guidance for an
+  exposed WordPress admin panel, not a weakness class (CWE empty, OWASP A05);
+  `robots_txt_exposed` and `sitemap_xml_exposed` are public-by-design and
+  stay empty for both CWE and OWASP.
 - **TLS protocols / ciphers** (`tls_1_0_supported`, `tls_1_1_supported`,
   `weak_cipher_suite`) -- CWE-327, OWASP A02. (`tls_1_3_not_supported`,
   `cert_chain_length_unusual`) -- operational gaps, not weakness classes;
