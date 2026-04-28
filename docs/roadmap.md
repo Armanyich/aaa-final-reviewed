@@ -166,5 +166,9 @@ Acceptance criteria:
 
 ## Current Priority
 
-After merging Stage 1 milestone 3, move to Stage 2 preparation: generate the
-current rule inventory and start `docs/rule-coverage.md`.
+Stage 2 preparation is in progress. The rule inventory is exposed by
+`webconf-audit list-rules --format json` (full `RuleMeta` payload) and
+`docs/rule-coverage.md` collects the inventory together with the
+standards-mapping plan. Next step: start filling the CWE/OWASP/CIS columns
+of `docs/rule-coverage.md` one server family at a time, only where the
+mapping is honest.

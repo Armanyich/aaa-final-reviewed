@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from typing import cast
 
@@ -11,7 +12,7 @@ from webconf_audit.local.lighttpd import analyze_lighttpd_config
 from webconf_audit.local.nginx import analyze_nginx_config
 from webconf_audit.models import AnalysisIssue, AnalysisResult, Severity, SourceLocation
 from webconf_audit.report import JsonFormatter, ReportData, TextFormatter, deduplicate_findings
-from webconf_audit.rule_registry import RuleCategory
+from webconf_audit.rule_registry import RuleCategory, RuleMeta
 from webconf_audit.suppressions import apply_suppressions, load_suppression_file
 
 app = typer.Typer(help="Web server configuration security audit tool")
@@ -442,6 +443,12 @@ def list_rules(
         help="Filter by severity (critical, high, medium, low, info).",
     ),
     tag: str | None = typer.Option(None, "--tag", "-t", help="Filter by tag (e.g. tls, headers)."),
+    fmt: OutputFormat = typer.Option(
+        OutputFormat.text,
+        "--format",
+        "-f",
+        help="Output format: text, json.",
+    ),
 ) -> None:
     """List all registered audit rules with optional filtering."""
     from webconf_audit.rule_registry import registry
@@ -459,6 +466,10 @@ def list_rules(
         tag=parsed_tag,
     )
 
+    if fmt == OutputFormat.json:
+        typer.echo(json.dumps([_rule_meta_payload(m) for m in rules], indent=2, ensure_ascii=False))
+        return
+
     if not rules:
         typer.echo("No rules match the given filters.")
         raise typer.Exit()
@@ -469,6 +480,22 @@ def list_rules(
         server = m.server_type or ""
         typer.echo(f"{m.rule_id:<55} {m.severity:<7} {m.category:<10} {server:<10} {m.order}")
     typer.echo(f"\nTotal: {len(rules)} rules")
+
+
+def _rule_meta_payload(meta: RuleMeta) -> dict[str, object]:
+    return {
+        "rule_id": meta.rule_id,
+        "title": meta.title,
+        "severity": meta.severity,
+        "description": meta.description,
+        "recommendation": meta.recommendation,
+        "category": meta.category,
+        "server_type": meta.server_type,
+        "input_kind": meta.input_kind,
+        "tags": list(meta.tags),
+        "condition": meta.condition,
+        "order": meta.order,
+    }
 
 
 def _parse_rule_category(value: str | None) -> RuleCategory | None:

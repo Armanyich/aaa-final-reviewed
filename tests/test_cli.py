@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -92,6 +93,52 @@ class TestListRules:
         assert "SEV" in result.stdout
         assert "CAT" in result.stdout
         assert "ORDER" in result.stdout
+
+    def test_list_rules_json_format_returns_array(self) -> None:
+        result = runner.invoke(app, ["list-rules", "--format", "json"])
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert isinstance(payload, list)
+        assert len(payload) > 0
+
+    def test_list_rules_json_entries_expose_full_rule_meta(self) -> None:
+        result = runner.invoke(app, ["list-rules", "--format", "json", "--category", "universal"])
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        expected_keys = {
+            "rule_id",
+            "title",
+            "severity",
+            "description",
+            "recommendation",
+            "category",
+            "server_type",
+            "input_kind",
+            "tags",
+            "condition",
+            "order",
+        }
+        for entry in payload:
+            assert set(entry.keys()) == expected_keys
+            assert isinstance(entry["tags"], list)
+
+    def test_list_rules_json_respects_filters(self) -> None:
+        result = runner.invoke(
+            app, ["list-rules", "--format", "json", "--category", "external"]
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload
+        assert all(entry["category"] == "external" for entry in payload)
+
+    def test_list_rules_json_empty_match_emits_empty_array(self) -> None:
+        result = runner.invoke(
+            app,
+            ["list-rules", "--format", "json", "--category", "universal", "--server-type", "nginx"],
+        )
+        assert result.exit_code == 0
+        assert json.loads(result.stdout) == []
+        assert "No rules match" not in result.stdout
 
 
 # ---------------------------------------------------------------------------
