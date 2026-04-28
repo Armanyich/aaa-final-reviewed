@@ -496,6 +496,15 @@ def _deduplicated_finding_pairs(results: list[AnalysisResult]) -> list[tuple[Ana
 
 
 def _result_payload(result: AnalysisResult) -> dict[str, object]:
+    """Serialize a single analysis result with its raw, per-result findings.
+
+    ``payload["findings"]`` mirrors ``result.findings`` and is intentionally not
+    deduplicated, so it may include universal findings that are suppressed in
+    the aggregated top-level ``"findings"`` array (built via
+    ``_deduplicated_finding_pairs``). Consumers that want a stable, dedup'd
+    view of findings should read the top-level array; the per-result list is
+    kept verbatim so callers retain the full detector output for each target.
+    """
     payload = result.model_dump()
     payload["findings"] = [
         _finding_payload(result, finding)

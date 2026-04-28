@@ -9,7 +9,7 @@ from webconf_audit.local.iis import analyze_iis_config
 from webconf_audit.local.lighttpd import analyze_lighttpd_config
 from webconf_audit.local.nginx import analyze_nginx_config
 from webconf_audit.models import AnalysisResult, Severity
-from webconf_audit.report import JsonFormatter, ReportData, TextFormatter
+from webconf_audit.report import JsonFormatter, ReportData, TextFormatter, deduplicate_findings
 from webconf_audit.rule_registry import RuleCategory
 
 app = typer.Typer(help="Web server configuration security audit tool")
@@ -56,7 +56,8 @@ def _ci_exit_code(result: AnalysisResult, fail_on: FailOnSeverity | None) -> int
     if any(issue.level == "error" for issue in result.issues):
         return 1
     threshold = _SEVERITY_RANK[fail_on.value]
-    if any(_SEVERITY_RANK[finding.severity] >= threshold for finding in result.findings):
+    deduplicated, _ = deduplicate_findings(result.findings)
+    if any(_SEVERITY_RANK[finding.severity] >= threshold for finding in deduplicated):
         return 2
     return 0
 
