@@ -477,38 +477,36 @@ Mapping rationale (lighttpd rules):
 
 Count: 20
 
-Stage 2 step 3 mapping: **CWE / OWASP complete** for this group. As with
-nginx and apache, the CIS column stays empty even though a *CIS Microsoft
-IIS Benchmark* exists at
-[cisecurity.org](https://www.cisecurity.org/benchmark/microsoft_iis) — the
-section numbers will land with the Stage 2 step 4 gap-analysis PR. ASP.NET
-debug / trace / detailed-error rules cluster around CWE-209 / CWE-489;
-request-filtering rules cluster around CWE-176 (improper encoding
-handling); attack-surface rules (`webdav_module_enabled`,
-`cgi_handler_enabled`) leave CWE empty.
+Stage 2 mapping status: **CWE / OWASP / ASVS complete; CIS existing-rule
+reference pass complete** for this group. CIS references come from a full
+walk-through of the *CIS Microsoft IIS 10 Benchmark v1.2.1*. That benchmark's
+transport-encryption chapter includes host-level SChannel registry policy, so
+SChannel-backed universal TLS mappings are listed in a separate IIS/SChannel
+table below rather than treated as IIS XML controls. Unsupported CIS IIS 7/8
+archive PDFs remain historical context only.
 
 | Rule ID | Severity | Input | Tags | CWE | OWASP | ASVS | CIS / Vendor |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `iis.directory_browse_enabled` | medium | effective | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.3 | - |
-| `iis.http_errors_detailed` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-16.5.1 (partial: detailed errors only) | - |
-| `iis.custom_errors_off` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-16.5.1 (partial: detailed errors only) | - |
-| `iis.asp_script_error_sent_to_browser` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-16.5.1 (partial: detailed errors only) | - |
-| `iis.compilation_debug_enabled` | medium | effective | - | [CWE-489](https://cwe.mitre.org/data/definitions/489.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.2 | - |
-| `iis.trace_enabled` | medium | effective | - | [CWE-215](https://cwe.mitre.org/data/definitions/215.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.2 | - |
+| `iis.directory_browse_enabled` | medium | effective | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.3 | CIS Microsoft IIS 10 v1.2.1 §1.3 |
+| `iis.http_errors_detailed` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-16.5.1 (partial: detailed errors only) | CIS Microsoft IIS 10 v1.2.1 §3.4 |
+| `iis.custom_errors_off` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-16.5.1 (partial: detailed errors only) | CIS Microsoft IIS 10 v1.2.1 §3.3 |
+| `iis.asp_script_error_sent_to_browser` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-16.5.1 (partial: detailed errors only) | CIS Microsoft IIS 10 v1.2.1 §3.4 (partial: classic ASP browser errors are the same detailed-error exposure; benchmark audits IIS HTTP errors) |
+| `iis.compilation_debug_enabled` | medium | effective | - | [CWE-489](https://cwe.mitre.org/data/definitions/489.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.2 | CIS Microsoft IIS 10 v1.2.1 §3.2 |
+| `iis.trace_enabled` | medium | effective | - | [CWE-215](https://cwe.mitre.org/data/definitions/215.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.2 | CIS Microsoft IIS 10 v1.2.1 §3.5 |
 | `iis.http_runtime_version_header_enabled` | low | effective | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | - |
-| `iis.request_filtering_allow_double_escaping` | medium | effective | - | [CWE-176](https://cwe.mitre.org/data/definitions/176.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `iis.request_filtering_allow_high_bit` | low | effective | - | [CWE-176](https://cwe.mitre.org/data/definitions/176.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `iis.ssl_not_required` | medium | effective | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | ASVS v5.0.0-12.2.1 | - |
+| `iis.request_filtering_allow_double_escaping` | medium | effective | - | [CWE-176](https://cwe.mitre.org/data/definitions/176.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Microsoft IIS 10 v1.2.1 §4.5 |
+| `iis.request_filtering_allow_high_bit` | low | effective | - | [CWE-176](https://cwe.mitre.org/data/definitions/176.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Microsoft IIS 10 v1.2.1 §4.4 |
+| `iis.ssl_not_required` | medium | effective | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | ASVS v5.0.0-12.2.1 | CIS Microsoft IIS 10 v1.2.1 §2.6 (partial: rule enforces `sslFlags` for access sections generally; benchmark scopes Basic Authentication) |
 | `iis.ssl_weak_cipher_strength` | low | effective | tls | [CWE-326](https://cwe.mitre.org/data/definitions/326.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | ASVS v5.0.0-12.1.2 (partial: IIS cipher strength flag only) | - |
-| `iis.logging_not_configured` | medium | effective | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | - |
-| `iis.max_allowed_content_length_missing` | low | effective | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | - |
-| `iis.missing_hsts_header` | medium | effective | headers, tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.1 | - |
-| `iis.forms_auth_require_ssl_missing` | medium | effective | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | ASVS v5.0.0-12.2.1 | - |
-| `iis.session_state_cookieless` | medium | effective | - | [CWE-598](https://cwe.mitre.org/data/definitions/598.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - | - |
-| `iis.webdav_module_enabled` | medium | effective | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `iis.cgi_handler_enabled` | medium | effective | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `iis.custom_headers_expose_server` | low | effective | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | - |
-| `iis.anonymous_auth_enabled` | medium | effective | - | [CWE-287](https://cwe.mitre.org/data/definitions/287.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - | - |
+| `iis.logging_not_configured` | medium | effective | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS Microsoft IIS 10 v1.2.1 §5.2 (partial: rule checks logging present/enabled, not the full advanced logging field set) |
+| `iis.max_allowed_content_length_missing` | low | effective | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS Microsoft IIS 10 v1.2.1 §4.1 (partial: requires a positive limit but does not validate the benchmark size) |
+| `iis.missing_hsts_header` | medium | effective | headers, tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.1 | CIS Microsoft IIS 10 v1.2.1 §7.1 (partial: header presence only) |
+| `iis.forms_auth_require_ssl_missing` | medium | effective | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | ASVS v5.0.0-12.2.1 | CIS Microsoft IIS 10 v1.2.1 §2.3 |
+| `iis.session_state_cookieless` | medium | effective | - | [CWE-598](https://cwe.mitre.org/data/definitions/598.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - | CIS Microsoft IIS 10 v1.2.1 §3.6 |
+| `iis.webdav_module_enabled` | medium | effective | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Microsoft IIS 10 v1.2.1 §1.7 |
+| `iis.cgi_handler_enabled` | medium | effective | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Microsoft IIS 10 v1.2.1 §4.8 (partial: detects CGI handler module presence, not the full handler permission matrix) |
+| `iis.custom_headers_expose_server` | low | effective | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | CIS Microsoft IIS 10 v1.2.1 §3.11 (partial: covers server-revealing custom headers, not the native `Server` header removal path) |
+| `iis.anonymous_auth_enabled` | medium | effective | - | [CWE-287](https://cwe.mitre.org/data/definitions/287.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - | CIS Microsoft IIS 10 v1.2.1 §2.1/§2.2 (partial: rule detects anonymous auth combined with named auth, not a full authorization-policy audit) |
 
 Mapping rationale (iis rules):
 
@@ -559,6 +557,33 @@ Mapping rationale (iis rules):
   authentication is enabled *together with* another scheme. The anonymous
   module wins the auth handshake first, so authenticated checks downstream
   do not run: CWE-287 (improper authentication), OWASP A07.
+
+IIS / SChannel mappings for universal rules:
+
+| Rule ID | Source split | CIS / Vendor mapping |
+| --- | --- | --- |
+| `universal.directory_listing_enabled` | IIS XML / effective config | CIS Microsoft IIS 10 v1.2.1 §1.3 |
+| `universal.missing_hsts` | IIS XML / effective config | CIS Microsoft IIS 10 v1.2.1 §7.1 (partial: header presence only) |
+| `universal.server_identification_disclosed` | IIS response-header policy | CIS Microsoft IIS 10 v1.2.1 §3.11/§3.12 (partial: local rules cover X-Powered-By / ASP.NET family headers; native `Server` header removal remains a gap) |
+| `universal.weak_tls_protocol` | Windows SChannel registry enrichment for IIS TLS normalization | CIS Microsoft IIS 10 v1.2.1 §7.2/§7.3/§7.4/§7.5 (partial: detects enabled weak protocols; does not enforce TLS 1.2 enabled) |
+| `universal.weak_tls_ciphers` | Windows SChannel registry enrichment for IIS TLS normalization | CIS Microsoft IIS 10 v1.2.1 §7.7/§7.8/§7.9 (partial: detects weak-pattern ciphers; does not enforce AES 128 disabled, AES 256 enabled, or cipher-suite ordering) |
+
+IIS CIS v1.2.1 / Windows source-of-truth gap table:
+
+| CIS section | Gap type | Current coverage / follow-up |
+| --- | --- | --- |
+| §1.1, Windows Server host hardening | `host-depth` | Web-root partitioning, OS service posture, filesystem ACLs, and broader Windows Server host baseline checks require an explicit host-inspection mode. |
+| §1.2 | `direct-rule` | Host-header coverage can be added from IIS bindings once we define the policy for wildcard / default bindings. |
+| §1.4/§1.5/§1.6 | `parser-depth` | Application-pool identity, unique pools, and anonymous-user identity need first-class application-pool modeling. |
+| §2.1/§2.2/§2.5/§2.7/§2.8 | `direct-rule` | Authorization defaults, forms cookie protection, cleartext password formats, and credentials stored in config are XML-backed checks not yet implemented. |
+| §2.6 | `direct-rule` | Existing `iis.ssl_not_required` is broader than Basic Authentication. A sharper rule should check Basic Auth plus `sslFlags` together. |
+| §3.1/§3.7/§3.8/§3.9/§3.10/§3.12 | `direct-rule` | Retail deployment mode, HttpOnly cookies, MachineKey validation, trust level, and native `Server` header removal remain XML-backed follow-ups. |
+| §4.2/§4.3/§4.7/§4.9/§4.10 | `direct-rule` | `maxUrl`, `maxQueryString`, `allowUnlisted`, `notListedIsapisAllowed`, and `notListedCgisAllowed` can be added from current request-filtering / restriction sections. |
+| §4.8 | `parser-depth` | Handler permission checks need richer handler access-policy semantics than the current CGI-module presence rule. |
+| §4.11/§5.1/§5.3 | `host-depth` | Dynamic IP restrictions, log location, and ETW logging depend on server-level feature / filesystem state beyond current XML signals. |
+| §6.1/§6.2 | `out-of-scope` | FTP encryption and FTP logon attempt restrictions stay outside the web-server HTTP configuration scope unless FTP analysis becomes a product goal. |
+| §7.6/§7.10/§7.11/§7.12 | `direct-rule` | SChannel enrichment can support TLS 1.2 enabled, AES 128 disabled, AES 256 enabled, and cipher ordering checks after the weak-protocol / weak-cipher baseline. |
+| CIS IIS 7/8 archive PDFs | `research` | Local archive PDFs are historical context only; they must not become primary references unless a future PR explicitly scopes legacy IIS. |
 
 ### External (Probe-based)
 
@@ -750,7 +775,8 @@ Progress:
 - [x] Apache local rules (27) — CWE/OWASP filled; CIS existing-rule reference
   pass complete
 - [x] Lighttpd local rules (15)
-- [x] IIS local rules (20) — CWE/OWASP filled; CIS pending Stage 2 step 4
+- [x] IIS local rules (20) — CWE/OWASP/ASVS filled; CIS existing-rule reference
+  pass complete
 - [x] External (probe) rules (69) — CWE/OWASP filled; CIS not applicable (probes)
 - [x] ASVS 5.0.0 first-pass references for reviewed direct/partial candidates
 
