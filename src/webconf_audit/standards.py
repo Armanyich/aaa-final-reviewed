@@ -32,10 +32,16 @@ def owasp_top10_2021(
     coverage: StandardCoverage = "direct",
     note: str | None = None,
 ) -> StandardReference:
+    if category not in _OWASP_TOP10_2021_URLS:
+        valid_categories = ", ".join(sorted(_OWASP_TOP10_2021_URLS))
+        raise ValueError(
+            f"Unsupported OWASP Top 10 2021 category: {category}. "
+            f"Expected one of: {valid_categories}."
+        )
     return StandardReference(
         standard="OWASP Top 10",
         reference=category,
-        url=_OWASP_TOP10_2021_URLS.get(category),
+        url=_OWASP_TOP10_2021_URLS[category],
         coverage=coverage,
         note=note,
     )

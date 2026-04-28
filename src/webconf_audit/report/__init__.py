@@ -691,12 +691,22 @@ def finding_payload(result: AnalysisResult, finding: Finding) -> dict[str, objec
     payload = finding.model_dump()
     payload["fingerprint"] = finding_fingerprint(result, finding)
     standards = _standard_ref_payloads(finding.rule_id)
-    if standards:
-        payload["standards"] = standards
+    payload["standards"] = standards
     return payload
 
 
+def _ensure_rule_metadata_loaded() -> None:
+    registry.ensure_loaded("webconf_audit.local.rules.universal")
+    registry.ensure_loaded("webconf_audit.local.nginx.rules")
+    registry.ensure_loaded("webconf_audit.local.apache.rules")
+    registry.ensure_loaded("webconf_audit.local.lighttpd.rules")
+    registry.ensure_loaded("webconf_audit.local.iis.rules")
+    # External meta-only rules register on import.
+    import webconf_audit.external.rules._runner  # noqa: F401
+
+
 def _standards_for_rule(rule_id: str) -> tuple[StandardReference, ...]:
+    _ensure_rule_metadata_loaded()
     meta = registry.get_meta(rule_id)
     if meta is None:
         return ()

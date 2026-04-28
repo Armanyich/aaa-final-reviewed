@@ -12,7 +12,6 @@ from webconf_audit.models import (
 )
 from webconf_audit.report import JsonFormatter, ReportData, TextFormatter
 from webconf_audit.suppressions import SUPPRESSED_FINDINGS_METADATA_KEY
-from webconf_audit.cli import _ensure_all_rules_loaded
 
 
 # ---------------------------------------------------------------------------
@@ -349,7 +348,6 @@ class TestTextFormatter:
         assert "server_header" in out
 
     def test_can_group_findings_by_standard(self) -> None:
-        _ensure_all_rules_loaded()
         r = _result(
             findings=[
                 _finding(
@@ -406,7 +404,9 @@ class TestJsonFormatter:
         assert len(findings) == 1
         assert findings[0]["rule_id"] == "x.rule"
         assert len(findings[0]["fingerprint"]) == 64
+        assert findings[0]["standards"] == []
         assert parsed["findings"][0]["fingerprint"] == findings[0]["fingerprint"]
+        assert parsed["findings"][0]["standards"] == []
 
     def test_json_empty_report(self) -> None:
         out = JsonFormatter().format(ReportData(results=[]))
@@ -507,7 +507,6 @@ class TestJsonFormatter:
         ]
 
     def test_json_findings_include_standards_metadata(self) -> None:
-        _ensure_all_rules_loaded()
         r = _result(
             findings=[
                 _finding(
