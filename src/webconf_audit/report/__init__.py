@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field
 
+from webconf_audit.fingerprints import finding_fingerprint
 from webconf_audit.models import (
     AnalysisIssue,
     AnalysisResult,
@@ -466,14 +467,56 @@ class JsonFormatter:
 
     def format(self, report: ReportData) -> str:
         summary = report.summary()
+        top_level_findings = _deduplicated_finding_pairs(report.results)
         payload = {
             "generated_at": report.generated_at,
             "summary": summary.model_dump(),
-            "results": [r.model_dump() for r in report.results],
-            "findings": [f.model_dump() for f in report.all_findings],
+            "results": [
+                _result_payload(result)
+                for result in report.results
+            ],
+            "findings": [
+                _finding_payload(result, finding)
+                for result, finding in top_level_findings
+            ],
             "issues": [i.model_dump() for i in report.all_issues],
         }
         return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+def _deduplicated_finding_pairs(results: list[AnalysisResult]) -> list[tuple[AnalysisResult, Finding]]:
+    deduplicated_results, _ = _deduplicated_findings_by_result(results)
+    pairs = [
+        (result, finding)
+        for result, result_findings in deduplicated_results
+        for finding in result_findings
+    ]
+    pairs.sort(key=lambda pair: _finding_sort_key(pair[1]))
+    return pairs
+
+
+def _result_payload(result: AnalysisResult) -> dict[str, object]:
+    """Serialize a single analysis result with its raw, per-result findings.
+
+    ``payload["findings"]`` mirrors ``result.findings`` and is intentionally not
+    deduplicated, so it may include universal findings that are suppressed in
+    the aggregated top-level ``"findings"`` array (built via
+    ``_deduplicated_finding_pairs``). Consumers that want a stable, dedup'd
+    view of findings should read the top-level array; the per-result list is
+    kept verbatim so callers retain the full detector output for each target.
+    """
+    payload = result.model_dump()
+    payload["findings"] = [
+        _finding_payload(result, finding)
+        for finding in result.findings
+    ]
+    return payload
+
+
+def _finding_payload(result: AnalysisResult, finding: Finding) -> dict[str, object]:
+    payload = finding.model_dump()
+    payload["fingerprint"] = finding_fingerprint(result, finding)
+    return payload
 
 
 # ---------------------------------------------------------------------------
