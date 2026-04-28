@@ -128,6 +128,12 @@ CIS references unless the exact section mapping has already been verified in
 the source document. Its job is to make the later mapping PRs boring: clear
 inputs, clear gap labels, and no hidden standards assumptions.
 
+The planning-pass portion of a PR must stay documentation-only: it must not
+change the rule registry, add or remove rule IDs, modify rule behavior, or
+change rule metadata such as severity, tags, descriptions, conditions, or
+recommendations. Planning artifacts such as gap tables, checklists, source
+links, and ordering notes are allowed.
+
 Planning output for CIS NGINX Benchmark 3.0.0:
 
 - confirm the benchmark version and source link used for the walk;
@@ -172,6 +178,10 @@ the expected artifact for each family:
 | CIS Apache mapping | Apache CIS references plus an Apache-specific gap table | No new rules |
 | IIS / Windows mapping | IIS XML, Windows/SChannel, Microsoft docs, and legacy-CIS source split | No new rules |
 
+`No new rules` means no adding or removing rule IDs and no changes to rule
+behavior or signal detection. Updating standards references for existing rules
+and filling standards gap tables is allowed.
+
 ## ASVS 5.0.0 First Pass
 
 This first ASVS pass is intentionally limited to requirements that a web server
@@ -185,6 +195,11 @@ Primary ASVS chapters for the current rule set:
 - [V12 Secure Communication](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x21-V12-Secure-Communication.md)
 - [V13 Configuration](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x22-V13-Configuration.md)
 - [V16 Security Logging and Error Handling](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md)
+
+The confirmed direct and partial candidates below are copied into the `ASVS`
+column in `docs/rule-coverage.md`. Requirements that need new probe depth,
+parser depth, host inspection, or stricter policy interpretation remain in the
+follow-up gap list.
 
 ### Direct Coverage Candidates (partial where noted)
 
@@ -290,7 +305,7 @@ standard section before implementation.
 
 | ID | Area | Gap type | Priority | Candidate work |
 | --- | --- | --- | --- | --- |
-| STD-GAP-001 | ASVS 5.0.0 | covered | P1 | Review the first-pass ASVS candidates above, then add exact ASVS references to the dedicated `ASVS` column for already-covered TLS, HTTPS redirect, HSTS, cookie, CORS, security-header, and sensitive-path exposure rules. |
+| STD-GAP-001 | ASVS 5.0.0 | covered | P1 | First-pass direct/partial references are copied into the dedicated `ASVS` column for already-covered TLS, HTTPS redirect, HSTS, cookie, CORS, security-header, and sensitive-path exposure rules. Remaining ASVS items stay in the follow-up gap list. |
 | STD-GAP-002 | Nginx CIS | covered | P1 | Fill CIS references for existing Nginx checks such as `server_tokens_on`, `autoindex_on`, logging, TLS protocol/cipher, request-size, and access-control rules after the NGINX 3.0.0 benchmark walk. |
 | STD-GAP-003 | Nginx CIS | direct-rule | P2 | Validate and potentially add Nginx TLS hardening rules not currently represented, such as session ticket, OCSP stapling completeness, or DH parameter posture checks. |
 | STD-GAP-004 | Nginx CIS | host-depth | P3 | Classify Nginx file ownership, permissions, package, service user, and filesystem layout recommendations as host-depth unless an explicit host mode is added. |
@@ -300,7 +315,7 @@ standard section before implementation.
 | STD-GAP-008 | IIS / Windows Server | covered | P1 | Map existing IIS and universal TLS/SChannel registry checks to active Windows Server or Microsoft hardening references where the requirement is host policy rather than IIS XML. |
 | STD-GAP-009 | IIS / vendor docs | direct-rule | P2 | Validate additional IIS XML checks around request filtering deny lists, handler exposure, authentication defaults, and response-header behavior against current Microsoft documentation. |
 | STD-GAP-010 | IIS legacy CIS | research | P3 | Decide whether unsupported CIS IIS 7/8 documents should be used only as historical notes, not as primary compliance references. |
-| STD-GAP-011 | External probes | covered | P1 | Add ASVS references to the dedicated `ASVS` column for observable runtime behavior: TLS protocol negotiation, weak cipher negotiation, certificate validity, security headers, dangerous methods, and exposed sensitive files. |
+| STD-GAP-011 | External probes | covered | P1 | First-pass ASVS references are copied into the dedicated `ASVS` column for observable runtime behavior: TLS protocol negotiation, weak cipher negotiation, certificate validity, security headers, dangerous methods, and exposed sensitive files. Deeper probe work remains in `STD-GAP-014`. |
 | STD-GAP-012 | Standards output | direct-rule | P2 | After references stabilize, add optional report grouping by standard (`--group-by standard` or JSON `standards`) without changing rule behavior. |
 | STD-GAP-013 | ASVS 5.0.0 | direct-rule | P2 | Add CSP quality probes for `frame-ancestors`, `object-src`, `base-uri`, and reporting directives after deciding the desired strictness. |
 | STD-GAP-014 | ASVS 5.0.0 | probe-depth | P3 | Extend TLS probing for forward secrecy, cipher preference, OCSP stapling, and ECH before claiming deeper V12 coverage. |
@@ -309,7 +324,7 @@ standard section before implementation.
 
 Keep standards work small enough for CodeRabbit and human review:
 
-1. ASVS mapping for already-covered rules.
+1. ASVS first-pass mapping for already-covered rules in `docs/rule-coverage.md`.
 2. Combined CIS / IIS planning pass for the three server-family standards
    tracks above.
 3. CIS Nginx mapping and Nginx-specific gap table.
