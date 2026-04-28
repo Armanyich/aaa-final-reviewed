@@ -264,45 +264,49 @@ Nginx CIS 3.0.0 gap table:
 
 Count: 27
 
-Stage 2 step 3 mapping: **CWE / OWASP complete** for this group. As with
-nginx, the CIS column stays empty even though a *CIS Apache HTTP Server
-Benchmark* exists at
-[cisecurity.org](https://www.cisecurity.org/benchmark/apache_http_server) —
-specific section numbers will land with the Stage 2 step 4 gap-analysis PR.
-Rules that are best-practice / organisational (e.g. demanding explicit
-`AllowOverride`, requiring `ErrorDocument`) leave CWE empty when no clean
-weakness class fits, and `htaccess_*` rules are typed to the override-driven
-weakness they create rather than to ".htaccess" itself.
+Stage 2 mapping status: **CWE / OWASP complete; CIS existing-rule reference
+pass complete** for this group. CIS references come from a full walk-through
+of the *CIS Apache HTTP Server 2.4 Benchmark v2.3.0* (the Apache HTTP Server
+source listed on
+[cisecurity.org](https://www.cisecurity.org/benchmark/apache_http_server)).
+Cells that remain empty under `CIS / Vendor` describe rules that are
+operational anti-patterns, deprecated controls, or scoped narrower / wider
+than any specific CIS recommendation; the gap table after the rationale lists
+what the benchmark covers but webconf-audit does not. Rules that are
+best-practice / organisational (e.g. demanding explicit `AllowOverride`,
+requiring `ErrorDocument`) leave CWE empty when no clean weakness class fits,
+and `htaccess_*` rules are typed to the override-driven weakness they create
+rather than to ".htaccess" itself.
 
 | Rule ID | Severity | Input | Tags | CWE | OWASP | ASVS | CIS / Vendor |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `apache.allowoverride_all_in_directory` | medium | ast | - | [CWE-732](https://cwe.mitre.org/data/definitions/732.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.backup_temp_files_not_restricted` | low | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.custom_log_missing` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | - |
-| `apache.directory_without_allowoverride` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
+| `apache.allowoverride_all_in_directory` | medium | ast | - | [CWE-732](https://cwe.mitre.org/data/definitions/732.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §4.4 (partial: detects broad or inherited `AllowOverride`, not full `AllowOverride None` policy for every directory) |
+| `apache.backup_temp_files_not_restricted` | low | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §5.13 (partial: common backup/temp file patterns only) |
+| `apache.custom_log_missing` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §6.3 (partial: `CustomLog` presence only; does not validate log format or destination policy) |
+| `apache.directory_without_allowoverride` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §4.4 (partial: explicitness heuristic; does not require `AllowOverride None`) |
 | `apache.error_document_404_missing` | low | ast | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
 | `apache.error_document_500_missing` | low | ast | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.error_log_missing` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | - |
+| `apache.error_log_missing` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §6.1 (partial: `ErrorLog` presence only; does not validate filename or severity level) |
 | `apache.htaccess_auth_without_require` | medium | htaccess | htaccess | [CWE-287](https://cwe.mitre.org/data/definitions/287.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - | - |
-| `apache.htaccess_disables_security_headers` | medium | htaccess | htaccess, headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.htaccess_enables_cgi` | medium | htaccess | htaccess | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.htaccess_enables_directory_listing` | medium | htaccess | htaccess | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.3 | - |
-| `apache.htaccess_contains_security_directive` | medium | htaccess | htaccess | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
+| `apache.htaccess_disables_security_headers` | medium | htaccess | htaccess, headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §5.16/§5.17/§5.18/§7.11 (partial: detects `.htaccess` unsetting selected security headers, not full header policy configuration) |
+| `apache.htaccess_enables_cgi` | medium | htaccess | htaccess | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §5.3 (partial: `.htaccess`-driven `ExecCGI`, not full Options minimization) |
+| `apache.htaccess_enables_directory_listing` | medium | htaccess | htaccess | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.3 | CIS Apache HTTP Server 2.4 v2.3.0 §5.1/§5.2/§5.3 (partial: `.htaccess`-driven directory listing, not full Options policy) |
+| `apache.htaccess_contains_security_directive` | medium | htaccess | htaccess | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §4.4 (partial: `.htaccess` governance signal, not direct `AllowOverride None` validation) |
 | `apache.htaccess_rewrite_without_limit` | low | htaccess | htaccess | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.htaccess_weakens_security` | high | mixed | htaccess | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.index_options_fancyindexing_enabled` | low | ast | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.3 | - |
-| `apache.index_options_scanhtmltitles_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.limit_request_body_missing_or_invalid` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | - |
-| `apache.limit_request_fields_missing_or_invalid` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | - |
-| `apache.options_execcgi_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.options_includes_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.options_indexes` | medium | ast | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.3 | - |
-| `apache.options_multiviews_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `apache.server_info_exposed` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.5 | - |
-| `apache.server_signature_not_off` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | - |
-| `apache.server_status_exposed` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.5 | - |
-| `apache.server_tokens_not_prod` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | - |
-| `apache.trace_enable_not_off` | low | ast | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.4 | - |
+| `apache.htaccess_weakens_security` | high | mixed | htaccess | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §8.2 (partial: `.htaccess` can re-enable signature disclosure; not the primary directive check) |
+| `apache.index_options_fancyindexing_enabled` | low | ast | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.3 | CIS Apache HTTP Server 2.4 v2.3.0 §5.1/§5.2/§5.3 (partial: directory-listing detail option only) |
+| `apache.index_options_scanhtmltitles_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §5.1/§5.2/§5.3 (partial: directory-listing detail option only) |
+| `apache.limit_request_body_missing_or_invalid` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS Apache HTTP Server 2.4 v2.3.0 §10.4 (partial: requires a positive integer but does not validate `<= 102400`) |
+| `apache.limit_request_fields_missing_or_invalid` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS Apache HTTP Server 2.4 v2.3.0 §10.2 (partial: requires a positive integer but does not validate `<= 100`) |
+| `apache.options_execcgi_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §5.1/§5.2/§5.3 (partial: specific `Options ExecCGI` token only) |
+| `apache.options_includes_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §5.1/§5.2/§5.3 (partial: specific `Options Includes` token only) |
+| `apache.options_indexes` | medium | ast | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.3 | CIS Apache HTTP Server 2.4 v2.3.0 §5.1/§5.2/§5.3 (partial: specific `Options Indexes` token only) |
+| `apache.options_multiviews_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS Apache HTTP Server 2.4 v2.3.0 §5.1/§5.2/§5.3 (partial: specific `Options MultiViews` token only) |
+| `apache.server_info_exposed` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.5 | CIS Apache HTTP Server 2.4 v2.3.0 §2.8 (partial: detects exposed `/server-info`, not loaded-module inventory) |
+| `apache.server_signature_not_off` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | CIS Apache HTTP Server 2.4 v2.3.0 §8.2 |
+| `apache.server_status_exposed` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.5 | CIS Apache HTTP Server 2.4 v2.3.0 §2.4 (partial: detects exposed `/server-status`, not loaded-module inventory) |
+| `apache.server_tokens_not_prod` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | CIS Apache HTTP Server 2.4 v2.3.0 §8.1 (partial: enforces `Prod`; benchmark also allows `ProductOnly`) |
+| `apache.trace_enable_not_off` | low | ast | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.4 | CIS Apache HTTP Server 2.4 v2.3.0 §5.8 |
 
 Mapping rationale (apache rules):
 
@@ -366,6 +370,34 @@ Mapping rationale (apache rules):
   available, the classic vector for cross-site tracing (XST) which lets an
   attacker echo back `Authorization` / `Cookie` headers: CWE-200 (information
   exposure), OWASP A05.
+
+CIS Apache HTTP Server 2.4 v2.3.0 gap table:
+
+| CIS section | Gap type | Current coverage / follow-up |
+| --- | --- | --- |
+| §1.1-§1.3 | `host-depth` | Planning, single-use host posture, and package-source verification need host and deployment inventory. |
+| §2.1-§2.9 | `parser-depth` | Module minimization needs reliable module inventory from `LoadModule` / build data; current status/info rules only partially cover exposed endpoints. |
+| §3.1-§3.13 | `host-depth` | Service account, shell/lock state, ownership, permissions, lock/PID/scoreboard files, and writable directory controls need OS/filesystem metadata. |
+| §4.1-§4.2 | `parser-depth` | General access-control posture needs richer effective `Require`/legacy access semantics before broad claims are safe. |
+| §4.3-§4.4 | `direct-rule` | Existing `AllowOverride` rules are partial; full coverage needs explicit `AllowOverride None` validation for OS-root and all directory scopes. |
+| §5.1-§5.3 | `direct-rule` | Existing `Options` rules cover risky tokens individually; full coverage needs an allowed-options policy per directory class. |
+| §5.4-§5.6 | `probe-depth` | Default HTML and default CGI sample content require response-body probing or filesystem-content inspection. |
+| §5.7 | `direct-rule` | Add Apache HTTP method restriction checks; current TRACE coverage does not cover a full approved-method policy. |
+| §5.9 | `direct-rule` | Add old HTTP protocol-version checks after defining supported directive signals. |
+| §5.10-§5.13 | `direct-rule` | Current backup/temp file blocking is partial; add explicit `.ht*`, `.git`, `.svn`, and broader extension deny-list checks. |
+| §5.14-§5.15 | `direct-rule` | Add checks for IP-based requests and explicit listen-address policy after defining environment-specific expectations. |
+| §5.16-§5.18 | `direct-rule` | Add primary security-header presence/value rules for frame, Referrer-Policy, and Permissions-Policy; current `.htaccess` unset rule is only supporting evidence. |
+| §6.1, §6.3 | `direct-rule` | Existing log checks are presence-only; add severity, filename, format, and destination validation for full coverage. |
+| §6.2, §6.4-§6.5 | `host-depth` | Syslog facility, rotation/storage, and patch posture need host/package/log-management context. |
+| §6.6-§6.7 | `parser-depth` | ModSecurity and CRS checks need module/package/config inventory beyond current parser rules. |
+| §7.1, §7.4-§7.12 | `parser-depth` | Apache TLS directives need dedicated modeling for protocols, ciphers, renegotiation, compression, HTTPS redirect, OCSP, HSTS, and forward secrecy. |
+| §7.2 | `probe-depth` | Trusted certificate and chain validation needs runtime certificate probing rather than local path presence alone. |
+| §7.3 | `host-depth` | Private-key protection needs filesystem ownership and permission metadata. |
+| §8.3 | `probe-depth` | Default Apache content removal needs response-body probing or filesystem-content inspection. |
+| §8.4 | `direct-rule` | Add `FileETag` checks to ensure ETag does not include inode data. |
+| §9.1-§9.6 | `direct-rule` | Add timeout and keepalive value validation for DoS controls. |
+| §10.1-§10.4 | `direct-rule` | Existing request-limit checks cover only `LimitRequestFields` and `LimitRequestBody` positive integers; add exact threshold checks plus `LimitRequestLine` and `LimitRequestFieldSize`. |
+| §11.1-§11.4, §12.1-§12.3 | `host-depth` | SELinux and AppArmor posture require host security-framework inspection. |
 
 ### Lighttpd (Local)
 
@@ -715,7 +747,8 @@ Progress:
 - [x] Universal rules (11)
 - [x] Nginx local rules (41) — CWE/OWASP filled; CIS existing-rule reference
   pass complete
-- [x] Apache local rules (27) — CWE/OWASP filled; CIS pending Stage 2 step 4
+- [x] Apache local rules (27) — CWE/OWASP filled; CIS existing-rule reference
+  pass complete
 - [x] Lighttpd local rules (15)
 - [x] IIS local rules (20) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [x] External (probe) rules (69) — CWE/OWASP filled; CIS not applicable (probes)

@@ -48,11 +48,11 @@ The current project inventory is 183 rules:
 
 Stage 2 step 3 is complete for CWE and OWASP Top 10 mapping. Confirmed direct
 and partial ASVS candidates are now copied into the dedicated `ASVS` column in
-`docs/rule-coverage.md`. CIS NGINX existing-rule references and the
-Nginx-specific gap table are recorded in `docs/rule-coverage.md`; CIS Apache,
-IIS / Windows, and vendor-specific references remain pending. ASVS requirements
-that need deeper probe/parser coverage or a stricter policy interpretation stay
-in the follow-up gap list.
+`docs/rule-coverage.md`. CIS NGINX and CIS Apache existing-rule references plus
+their server-specific gap tables are recorded in `docs/rule-coverage.md`; IIS /
+Windows and vendor-specific references remain pending. ASVS requirements that
+need deeper probe/parser coverage or a stricter policy interpretation stay in
+the follow-up gap list.
 
 ## Mapping Rules
 
@@ -113,7 +113,7 @@ Use these labels in follow-up PRs:
    column in `docs/rule-coverage.md`.
 2. Walk CIS NGINX Benchmark v3.0.0 and fill Nginx CIS matches plus a Nginx gap
    table.
-3. Walk CIS Apache HTTP Server 2.4 Benchmark 2.3.0 and fill Apache CIS matches
+3. Walk CIS Apache HTTP Server 2.4 Benchmark v2.3.0 and fill Apache CIS matches
    plus an Apache gap table.
 4. Decide the IIS source of truth: active CIS Microsoft IIS 10 Benchmark 1.2.1
    for IIS policy, active CIS Windows Server Benchmarks for host/SChannel
@@ -163,7 +163,7 @@ Planning output for CIS NGINX Benchmark v3.0.0:
 - keep host ownership, package, service user, and filesystem layout guidance in
   `host-depth` until the project has an explicit host-inspection mode.
 
-Planning output for CIS Apache HTTP Server 2.4 Benchmark 2.3.0:
+Planning output for CIS Apache HTTP Server 2.4 Benchmark v2.3.0:
 
 - confirm the benchmark version and source link used for the walk;
 - list the existing Apache rules that are likely CIS-backed, including
@@ -334,9 +334,9 @@ standard section before implementation.
 | STD-GAP-002 | Nginx CIS | covered | P1 | Existing-rule CIS references and the Nginx-specific gap table are recorded in `docs/rule-coverage.md` from the CIS NGINX Benchmark v3.0.0 walk. |
 | STD-GAP-003 | Nginx CIS | direct-rule | P2 | Add follow-up Nginx rules for benchmark items that current parser data can support, such as unknown-host rejection, value validation for timeout/limit directives, HTTPS redirects, cipher-string validation, OCSP stapling completeness, and session resumption policy. |
 | STD-GAP-004 | Nginx CIS | host-depth | P3 | Keep Nginx package, service account, file ownership, permissions, private-key permissions, and PID-file recommendations in host-depth unless an explicit host mode is added. |
-| STD-GAP-005 | Apache CIS | covered | P1 | Fill CIS references for existing Apache checks such as `server_tokens_not_prod`, `server_signature_not_off`, `trace_enable_not_off`, `options_indexes`, status/info exposure, request limits, and logging. |
-| STD-GAP-006 | Apache CIS | direct-rule | P2 | Add Apache TLS directive checks for `SSLProtocol`, `SSLCipherSuite`, `SSLHonorCipherOrder`, stapling, and compression where the parser already exposes enough directive context. |
-| STD-GAP-007 | Apache CIS | parser-depth | P2 | Improve module inventory and include/effective handling before adding rules that reason about enabled module sets beyond the existing CGI/status/info checks. |
+| STD-GAP-005 | Apache CIS | covered | P1 | Existing-rule CIS references and the Apache-specific gap table are recorded in `docs/rule-coverage.md` from the CIS Apache HTTP Server 2.4 Benchmark v2.3.0 walk. |
+| STD-GAP-006 | Apache CIS | direct-rule | P2 | Add follow-up Apache rules for benchmark items that current parser data can support, such as full `AllowOverride None` validation, method restrictions, denied sensitive file patterns, security-header presence/value checks, `FileETag`, timeout/keepalive values, request-limit thresholds, and Apache TLS directives. |
+| STD-GAP-007 | Apache CIS | parser-depth | P2 | Improve module inventory, proxy/TLS directive modeling, and effective access-control semantics before adding rules that reason about loaded modules, upstream TLS trust, ModSecurity/CRS, or broad `Require` policy. |
 | STD-GAP-008 | IIS / Windows Server | covered | P1 | Map existing IIS and universal TLS/SChannel registry checks to active Windows Server or Microsoft hardening references where the requirement is host policy rather than IIS XML. |
 | STD-GAP-009 | IIS / vendor docs | direct-rule | P2 | Validate additional IIS XML checks around request filtering deny lists, handler exposure, authentication defaults, and response-header behavior against current Microsoft documentation. |
 | STD-GAP-010 | IIS legacy CIS | research | P3 | Decide whether unsupported CIS IIS 7/8 documents should be used only as historical notes, not as primary compliance references. |

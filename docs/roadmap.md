@@ -169,10 +169,9 @@ Acceptance criteria:
 Stage 2 step 4 is now active. `docs/standards-roadmap.md` defines the
 standards source baseline, gap labels, work order, and initial backlog for
 ASVS 5.0.0, CIS NGINX Benchmark v3.0.0, CIS Apache HTTP Server 2.4 Benchmark
-2.3.0, IIS / Windows Server hardening sources, and future standards-aware
+v2.3.0, IIS / Windows Server hardening sources, and future standards-aware
 reporting.
 
-Current step: CIS Nginx mapping — a follow-up mapping PR after the `Server
+Current step: CIS Apache mapping — a follow-up mapping PR after the `Server
 Standards Planning Pass` in `docs/standards-roadmap.md`. After review, continue
-with the remaining follow-up mapping PRs in order: CIS Apache, then IIS /
-Windows source-of-truth.
+with IIS / Windows source-of-truth mapping.
