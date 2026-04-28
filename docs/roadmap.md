@@ -145,13 +145,13 @@ Process:
    - CWE where a rule has a clear weakness class
    - OWASP where a rule supports an application security control
    - CIS or vendor hardening guidance where a rule is configuration-specific
-4. For candidate standards items, classify each gap:
+4. For candidate standards items, classify each gap and record the standards
+   backlog in `docs/standards-roadmap.md`:
    - direct rule can be added now
    - rule requires deeper parser/effective-config analysis
    - rule requires deeper external probing
    - rule is out of scope for this tool
-5. Build a separate standards roadmap from that gap analysis.
-6. Implement new work in small PRs:
+5. Implement new work in small PRs:
    - first add parser/probe depth when needed
    - then add the rule
    - then add mapping metadata and tests
@@ -166,10 +166,13 @@ Acceptance criteria:
 
 ## Current Priority
 
-Stage 2 step 3 (standards mapping) is **CWE / OWASP complete** for all 183
-rules: Universal (11), Lighttpd (15), Nginx (41), Apache (27), IIS (20)
-and External probes (69) all carry honest CWE / OWASP cells in
-`docs/rule-coverage.md`. Next step: Stage 2 step 4 — gap analysis. Walk
-through CIS Nginx / Apache / IIS Benchmarks and OWASP ASVS, fill in the
-CIS column where references match the published versions, and start a
-`docs/standards-roadmap.md` listing the gaps that justify new rules.
+Stage 2 step 4 is now active. `docs/standards-roadmap.md` defines the
+standards source baseline, gap labels, work order, and initial backlog for
+ASVS 5.0.0, CIS NGINX Benchmark 3.0.0, CIS Apache HTTP Server 2.4 Benchmark
+2.3.0, IIS / Windows Server hardening sources, and future standards-aware
+reporting.
+
+Next step: execute the Work Order in `docs/standards-roadmap.md` by walking
+one standard family at a time, starting with ASVS references for
+already-covered runtime and header rules, then CIS Nginx, then CIS Apache, then
+IIS / Windows Server source-of-truth decisions.
