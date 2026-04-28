@@ -166,8 +166,10 @@ Acceptance criteria:
 
 ## Current Priority
 
-Stage 2 step 3 (standards mapping) is in progress. The inventory is exposed
-by `webconf-audit list-rules --format json` and `docs/rule-coverage.md`
-holds the standards mapping. Universal rules (11) are mapped; remaining
-groups are filled one server family per PR, only where the mapping is
-honest. Next group: Nginx local rules.
+Stage 2 step 3 (standards mapping) is **CWE / OWASP complete** for all 183
+rules: Universal (11), Lighttpd (15), Nginx (41), Apache (27), IIS (20)
+and External probes (69) all carry honest CWE / OWASP cells in
+`docs/rule-coverage.md`. Next step: Stage 2 step 4 — gap analysis. Walk
+through CIS Nginx / Apache / IIS Benchmarks and OWASP ASVS, fill in the
+CIS column where references match the published versions, and start a
+`docs/standards-roadmap.md` listing the gaps that justify new rules.
