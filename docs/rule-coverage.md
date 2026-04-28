@@ -413,28 +413,88 @@ Mapping rationale (lighttpd rules):
 
 Count: 20
 
+Stage 2 step 3 mapping: **CWE / OWASP complete** for this group. As with
+nginx and apache, the CIS column stays empty even though a *CIS Microsoft
+IIS Benchmark* exists at
+[cisecurity.org](https://www.cisecurity.org/benchmark/microsoft_iis) — the
+section numbers will land with the Stage 2 step 4 gap-analysis PR. ASP.NET
+debug / trace / detailed-error rules cluster around CWE-209 / CWE-489;
+request-filtering rules cluster around CWE-176 (improper encoding
+handling); attack-surface rules (`webdav_module_enabled`,
+`cgi_handler_enabled`) leave CWE empty.
+
 | Rule ID | Severity | Input | Tags | CWE | OWASP | CIS / Vendor |
 | --- | --- | --- | --- | --- | --- | --- |
-| `iis.directory_browse_enabled` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.http_errors_detailed` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.custom_errors_off` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.asp_script_error_sent_to_browser` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.compilation_debug_enabled` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.trace_enabled` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.http_runtime_version_header_enabled` | low | effective | disclosure | _TBD_ | _TBD_ | _TBD_ |
-| `iis.request_filtering_allow_double_escaping` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.request_filtering_allow_high_bit` | low | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.ssl_not_required` | medium | effective | tls | _TBD_ | _TBD_ | _TBD_ |
-| `iis.ssl_weak_cipher_strength` | low | effective | tls | _TBD_ | _TBD_ | _TBD_ |
-| `iis.logging_not_configured` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.max_allowed_content_length_missing` | low | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.missing_hsts_header` | medium | effective | headers, tls | _TBD_ | _TBD_ | _TBD_ |
-| `iis.forms_auth_require_ssl_missing` | medium | effective | tls | _TBD_ | _TBD_ | _TBD_ |
-| `iis.session_state_cookieless` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.webdav_module_enabled` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.cgi_handler_enabled` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `iis.custom_headers_expose_server` | low | effective | disclosure | _TBD_ | _TBD_ | _TBD_ |
-| `iis.anonymous_auth_enabled` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
+| `iis.directory_browse_enabled` | medium | effective | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.http_errors_detailed` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.custom_errors_off` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.asp_script_error_sent_to_browser` | medium | effective | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.compilation_debug_enabled` | medium | effective | - | [CWE-489](https://cwe.mitre.org/data/definitions/489.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.trace_enabled` | medium | effective | - | [CWE-215](https://cwe.mitre.org/data/definitions/215.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.http_runtime_version_header_enabled` | low | effective | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.request_filtering_allow_double_escaping` | medium | effective | - | [CWE-176](https://cwe.mitre.org/data/definitions/176.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.request_filtering_allow_high_bit` | low | effective | - | [CWE-176](https://cwe.mitre.org/data/definitions/176.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.ssl_not_required` | medium | effective | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `iis.ssl_weak_cipher_strength` | low | effective | tls | [CWE-326](https://cwe.mitre.org/data/definitions/326.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `iis.logging_not_configured` | medium | effective | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - |
+| `iis.max_allowed_content_length_missing` | low | effective | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `iis.missing_hsts_header` | medium | effective | headers, tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.forms_auth_require_ssl_missing` | medium | effective | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `iis.session_state_cookieless` | medium | effective | - | [CWE-598](https://cwe.mitre.org/data/definitions/598.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - |
+| `iis.webdav_module_enabled` | medium | effective | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.cgi_handler_enabled` | medium | effective | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.custom_headers_expose_server` | low | effective | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `iis.anonymous_auth_enabled` | medium | effective | - | [CWE-287](https://cwe.mitre.org/data/definitions/287.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - |
+
+Mapping rationale (iis rules):
+
+- `directory_browse_enabled` -- direct match for CWE-548 (directory listing);
+  OWASP A05.
+- `http_errors_detailed`, `custom_errors_off`,
+  `asp_script_error_sent_to_browser` -- detailed-error / verbose-error
+  configurations expose stack traces, file paths, and SQL fragments to
+  unauthenticated users: CWE-209 (information exposure through an error
+  message), OWASP A05.
+- `compilation_debug_enabled` -- ASP.NET compiled in debug mode keeps
+  symbols and timing-sensitive paths in the deployed binaries: CWE-489
+  (active debug code), OWASP A05.
+- `trace_enabled` -- ASP.NET request tracing exposes per-request payload to
+  developers and, in misconfigured deployments, to attackers: CWE-215
+  (insertion of sensitive information into debugging code), OWASP A05.
+- `http_runtime_version_header_enabled`, `custom_headers_expose_server` --
+  `X-AspNet-Version` and similar custom headers leak runtime / build info:
+  CWE-200 (information exposure), OWASP A05.
+- `request_filtering_allow_double_escaping`,
+  `request_filtering_allow_high_bit` -- both relax IIS request-filtering
+  rules around URL encoding so multi-encoded or non-ASCII characters slip
+  through, which historically enabled path-traversal and filter-bypass
+  attacks: CWE-176 (improper handling of Unicode encoding), OWASP A05.
+- `ssl_not_required` -- a site that does not enforce `SslRequire` accepts
+  plaintext HTTP for the same routes: CWE-319 (cleartext transmission of
+  sensitive information), OWASP A02.
+- `ssl_weak_cipher_strength` -- a `<security:access sslFlags=...>` value
+  that does not pin a minimum cipher strength leaves weak ciphers
+  acceptable: CWE-326 (inadequate encryption strength), OWASP A02.
+- `logging_not_configured` -- no `<httpLogging>` / `<httpErrors>` logging
+  defeats incident response: CWE-778, OWASP A09.
+- `max_allowed_content_length_missing` -- no `maxAllowedContentLength`
+  ceiling lets a client send arbitrarily large bodies: CWE-770. OWASP cell
+  empty (no clean DoS-hardening home in the 2021 Top 10).
+- `missing_hsts_header` -- matches the universal HSTS rule: CWE-319,
+  OWASP A05 (misconfig).
+- `forms_auth_require_ssl_missing` -- `<forms requireSSL="false">` lets the
+  authentication ticket cookie travel in cleartext: CWE-319, OWASP A02.
+- `session_state_cookieless` -- cookieless session state embeds the session
+  identifier in the URL, leaking it via Referer headers, browser history,
+  proxy logs, and copy/paste: CWE-598 (use of GET method with sensitive
+  query strings), OWASP A07 (session management failure).
+- `webdav_module_enabled`, `cgi_handler_enabled` -- enabling WebDAV or
+  legacy CGI handlers is an attack-surface increase, not a textbook
+  weakness class. CWE empty, OWASP A05.
+- `anonymous_auth_enabled` -- the rule fires only when anonymous
+  authentication is enabled *together with* another scheme. The anonymous
+  module wins the auth handshake first, so authenticated checks downstream
+  do not run: CWE-287 (improper authentication), OWASP A07.
 
 ### External (Probe-based)
 
@@ -528,7 +588,7 @@ Progress:
 - [x] Nginx local rules (41) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [x] Apache local rules (27) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [x] Lighttpd local rules (15)
-- [ ] IIS local rules (20)
+- [x] IIS local rules (20) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [ ] External (probe) rules (69)
 
 Each follow-up PR fills one server family at a time and only writes a CWE,
