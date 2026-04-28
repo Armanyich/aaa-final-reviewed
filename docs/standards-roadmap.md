@@ -329,9 +329,9 @@ standard section before implementation.
 | ID | Area | Gap type | Priority | Candidate work |
 | --- | --- | --- | --- | --- |
 | STD-GAP-001 | ASVS 5.0.0 | covered | P1 | First-pass direct/partial references are copied into the dedicated `ASVS` column for already-covered TLS, HTTPS redirect, HSTS, cookie, CORS, security-header, and sensitive-path exposure rules. Remaining ASVS items stay in the follow-up gap list. |
-| STD-GAP-002 | Nginx CIS | covered | P1 | Fill CIS references for existing Nginx checks such as `server_tokens_on`, `autoindex_on`, logging, TLS protocol/cipher, request-size, and access-control rules after the NGINX 3.0.0 benchmark walk. |
-| STD-GAP-003 | Nginx CIS | direct-rule | P2 | Validate and potentially add Nginx TLS hardening rules not currently represented, such as session ticket, OCSP stapling completeness, or DH parameter posture checks. |
-| STD-GAP-004 | Nginx CIS | host-depth | P3 | Classify Nginx file ownership, permissions, package, service user, and filesystem layout recommendations as host-depth unless an explicit host mode is added. |
+| STD-GAP-002 | Nginx CIS | covered | P1 | Existing-rule CIS references and the Nginx-specific gap table are recorded in `docs/rule-coverage.md` from the CIS NGINX Benchmark 3.0.0 walk. |
+| STD-GAP-003 | Nginx CIS | direct-rule | P2 | Add follow-up Nginx rules for benchmark items that current parser data can support, such as unknown-host rejection, value validation for timeout/limit directives, HTTPS redirects, cipher-string validation, OCSP stapling completeness, and session resumption policy. |
+| STD-GAP-004 | Nginx CIS | host-depth | P3 | Keep Nginx package, service account, file ownership, permissions, private-key permissions, and PID-file recommendations in host-depth unless an explicit host mode is added. |
 | STD-GAP-005 | Apache CIS | covered | P1 | Fill CIS references for existing Apache checks such as `server_tokens_not_prod`, `server_signature_not_off`, `trace_enable_not_off`, `options_indexes`, status/info exposure, request limits, and logging. |
 | STD-GAP-006 | Apache CIS | direct-rule | P2 | Add Apache TLS directive checks for `SSLProtocol`, `SSLCipherSuite`, `SSLHonorCipherOrder`, stapling, and compression where the parser already exposes enough directive context. |
 | STD-GAP-007 | Apache CIS | parser-depth | P2 | Improve module inventory and include/effective handling before adding rules that reason about enabled module sets beyond the existing CGI/status/info checks. |
