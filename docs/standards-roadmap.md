@@ -46,8 +46,11 @@ The current project inventory is 183 rules:
 - IIS local: 20
 - External probes: 69
 
-Stage 2 step 3 is complete for CWE and OWASP Top 10 mapping. CIS, ASVS, and
-vendor-specific section references are intentionally still pending.
+Stage 2 step 3 is complete for CWE and OWASP Top 10 mapping. Confirmed direct
+and partial ASVS candidates are now copied into the dedicated `ASVS` column in
+`docs/rule-coverage.md`. CIS and vendor-specific section references remain
+pending, and ASVS requirements that need deeper probe/parser coverage or a
+stricter policy interpretation stay in the follow-up gap list.
 
 ## Mapping Rules
 
