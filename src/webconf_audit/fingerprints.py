@@ -21,6 +21,11 @@ _SCOPE_METADATA_KEYS = (
     "section",
 )
 
+# Host-like scope keys are case-insensitive (DNS), so lowercase their values to
+# keep fingerprints stable across "Example.COM" / "example.com" variants — the
+# same rule _normalize_target applies to URL netlocs.
+_LOWERCASE_SCOPE_KEYS = frozenset({"host", "server_name"})
+
 
 def finding_fingerprint(result: AnalysisResult, finding: Finding) -> str:
     """Return a stable SHA-256 fingerprint for a finding in result context."""
@@ -59,6 +64,9 @@ def _source_value(result: AnalysisResult, location: SourceLocation | None) -> st
 
 
 def _details_value(location: SourceLocation | None) -> str | None:
+    # Include details only when it acts as the primary locator (no target,
+    # xml_path, or line) or when location.kind is one of the kinds where
+    # details carry semantic meaning (header name, TLS parameter, check id).
     if location is None:
         return None
     if location.target is None and location.xml_path is None and location.line is None:
@@ -73,6 +81,8 @@ def _scope_value(metadata: dict[str, Any]) -> str | None:
         value = metadata.get(key)
         normalized = _metadata_scalar(value)
         if normalized is not None:
+            if key in _LOWERCASE_SCOPE_KEYS:
+                return normalized.lower()
             return normalized
     return None
 
@@ -118,13 +128,18 @@ def _relative_to_known_root(value: str, result_target: str) -> str | None:
     if not path.is_absolute():
         return None
 
-    roots = [Path.cwd()]
+    # Roots are derived solely from result_target so fingerprints are stable
+    # regardless of the current working directory (e.g. dev shell vs CI runner).
+    roots: list[Path] = []
     try:
         target = Path(result_target)
     except (OSError, ValueError):
         target = None
     if target is not None and target.is_absolute():
         roots.append(target if target.is_dir() else target.parent)
+
+    if not roots:
+        return None
 
     for root in roots:
         try:

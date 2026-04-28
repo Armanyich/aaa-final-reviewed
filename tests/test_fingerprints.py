@@ -66,7 +66,7 @@ def test_fingerprint_normalizes_paths_and_scope_metadata() -> None:
     components = finding_fingerprint_components(_result(), finding)
 
     assert components["source"] == "conf.d/site.conf"
-    assert components["scope"] == "EXAMPLE.com"
+    assert components["scope"] == "example.com"
 
 
 def test_fingerprint_normalizes_url_targets_without_fragment() -> None:
