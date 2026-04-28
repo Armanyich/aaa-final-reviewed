@@ -173,6 +173,7 @@ ASVS 5.0.0, CIS NGINX Benchmark 3.0.0, CIS Apache HTTP Server 2.4 Benchmark
 reporting.
 
 Next step: execute the Work Order in `docs/standards-roadmap.md` by walking
-one standard family at a time, starting with ASVS references for
-already-covered runtime and header rules, then CIS Nginx, then CIS Apache, then
-IIS / Windows Server source-of-truth decisions.
+one standard family at a time. Start with ASVS references for already-covered
+runtime and header rules, then use a short document-only planning PR to group
+the CIS Nginx, CIS Apache, and IIS / Windows source-of-truth tracks before
+their separate mapping PRs.

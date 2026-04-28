@@ -119,6 +119,59 @@ Use these labels in follow-up PRs:
 6. Implement new rules in small PRs. If a candidate needs parser or probe
    depth, land that depth first.
 
+## Server Standards Planning Pass
+
+The CIS Nginx, CIS Apache, and IIS / Windows source-of-truth work can share one
+short planning PR because all three are standards triage, not rule
+implementation. That PR must not populate `docs/rule-coverage.md` with final
+CIS references unless the exact section mapping has already been verified in
+the source document. Its job is to make the later mapping PRs boring: clear
+inputs, clear gap labels, and no hidden standards assumptions.
+
+Planning output for CIS NGINX Benchmark 3.0.0:
+
+- confirm the benchmark version and source link used for the walk;
+- list the existing Nginx rules that are likely CIS-backed, including
+  `nginx.server_tokens_on`, `nginx.autoindex_on`, logging, TLS protocol/cipher,
+  request-size, and access-control rules;
+- split candidate work into `covered`, `direct-rule`, `parser-depth`,
+  `host-depth`, `out-of-scope`, and `research`;
+- keep host ownership, package, service user, and filesystem layout guidance in
+  `host-depth` until the project has an explicit host-inspection mode.
+
+Planning output for CIS Apache HTTP Server 2.4 Benchmark 2.3.0:
+
+- confirm the benchmark version and source link used for the walk;
+- list the existing Apache rules that are likely CIS-backed, including
+  `apache.server_tokens_not_prod`, `apache.server_signature_not_off`,
+  `apache.trace_enable_not_off`, `apache.options_indexes`, status/info
+  exposure, request limits, and logging;
+- separate checks that the current directive parser can support from checks
+  that need better module inventory, include handling, or effective-config
+  semantics;
+- keep operating-system permissions, package ownership, service layout, and
+  filesystem hardening in `host-depth`.
+
+Planning output for IIS / Windows Server:
+
+- treat active CIS Microsoft IIS 10 Benchmark 1.2.1 as the primary source for
+  IIS XML and IIS feature policy;
+- treat active CIS Microsoft Windows Server Benchmarks as the source family for
+  host and SChannel policy, including TLS protocol/cipher settings outside XML;
+- use Microsoft documentation for implementation details when CIS wording is
+  too broad for a scanner signal;
+- treat unsupported or archived CIS IIS documents as historical context only,
+  not primary compliance references, unless a future PR explicitly scopes them.
+
+The combined planning PR is complete when it records the follow-up PR order and
+the expected artifact for each family:
+
+| Follow-up | Artifact | Rule changes allowed? |
+| --- | --- | --- |
+| CIS Nginx mapping | Nginx CIS references plus a Nginx-specific gap table | No new rules |
+| CIS Apache mapping | Apache CIS references plus an Apache-specific gap table | No new rules |
+| IIS / Windows mapping | IIS XML, Windows/SChannel, Microsoft docs, and legacy-CIS source split | No new rules |
+
 ## ASVS 5.0.0 First Pass
 
 This first ASVS pass is intentionally limited to requirements that a web server
@@ -257,11 +310,13 @@ standard section before implementation.
 Keep standards work small enough for CodeRabbit and human review:
 
 1. ASVS mapping for already-covered rules.
-2. CIS Nginx mapping and Nginx-specific gap table.
-3. CIS Apache mapping and Apache-specific gap table.
-4. IIS source-of-truth decision and IIS/Windows mapping.
-5. Standards metadata in the rule registry and report formats.
-6. First new rule PR from the prioritized backlog.
+2. Combined CIS / IIS planning pass for the three server-family standards
+   tracks above.
+3. CIS Nginx mapping and Nginx-specific gap table.
+4. CIS Apache mapping and Apache-specific gap table.
+5. IIS source-of-truth decision and IIS/Windows mapping.
+6. Standards metadata in the rule registry and report formats.
+7. First new rule PR from the prioritized backlog.
 
 ## Acceptance Criteria For New Standards Rules
 
