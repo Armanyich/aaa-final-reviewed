@@ -441,9 +441,10 @@ class TestJsonFormatter:
         first = json.loads(JsonFormatter().format(ReportData(results=[r1, r2])))
         second = json.loads(JsonFormatter().format(ReportData(results=[r2, r1])))
 
-        assert [entry["fingerprint"] for entry in first["findings"]] == [
-            entry["fingerprint"] for entry in second["findings"]
-        ]
+        first_fingerprints = [entry["fingerprint"] for entry in first["findings"]]
+        second_fingerprints = [entry["fingerprint"] for entry in second["findings"]]
+        assert len(first_fingerprints) == len(second_fingerprints) == 2
+        assert first_fingerprints == second_fingerprints
 
     def test_json_empty_report_has_empty_top_level_arrays(self) -> None:
         out = JsonFormatter().format(ReportData(results=[]))
