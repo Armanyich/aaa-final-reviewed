@@ -86,6 +86,9 @@ Acceptance criteria:
 - The default local interactive behavior remains unchanged unless CI flags are
   used.
 
+Status: implemented by stable fingerprints, severity-based CI exit codes,
+`.webconf-audit-ignore.yml` suppressions with reason/expiry, and CI examples.
+
 ### 3. Baseline/Diff Reporting
 
 Goal: make reports show what is new and what was fixed compared with a previous
@@ -160,5 +163,5 @@ Acceptance criteria:
 
 ## Current Priority
 
-The next concrete task after merging milestone 1 is milestone 2: CI integration
-features for users.
+The next concrete task after merging milestone 2 is milestone 3: baseline/diff
+reporting.

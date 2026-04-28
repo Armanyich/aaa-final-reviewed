@@ -11,6 +11,7 @@ from webconf_audit.models import (
     SourceLocation,
 )
 from webconf_audit.report import JsonFormatter, ReportData, TextFormatter
+from webconf_audit.suppressions import SUPPRESSED_FINDINGS_METADATA_KEY
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +143,19 @@ class TestReportDataBasic:
         s = report.summary()
         assert s.total_issues == 2
 
+    def test_suppressed_findings_counted_separately(self) -> None:
+        r = _result(
+            findings=[],
+            issues=[],
+        )
+        r.metadata[SUPPRESSED_FINDINGS_METADATA_KEY] = [
+            {"rule_id": "nginx.weak_ssl_protocols", "fingerprint": "abc"}
+        ]
+        report = ReportData(results=[r])
+        s = report.summary()
+        assert s.total_findings == 0
+        assert s.suppressed_findings == 1
+
 
 # ---------------------------------------------------------------------------
 # 7.1.2  TextFormatter
@@ -198,6 +212,17 @@ class TestTextFormatter:
         out = TextFormatter().format(ReportData(results=[]))
         assert "Findings: 0" in out
         assert "Total: 0 findings, 0 issues" in out
+
+    def test_suppressed_count_in_output(self) -> None:
+        r = _result()
+        r.metadata[SUPPRESSED_FINDINGS_METADATA_KEY] = [
+            {"rule_id": "nginx.weak_ssl_protocols", "fingerprint": "abc"}
+        ]
+
+        out = TextFormatter().format(ReportData(results=[r]))
+
+        assert "Suppressed findings: 1" in out
+        assert "Total: 0 findings, 0 issues, 1 suppressed" in out
 
     def test_external_summary_renders_port_tls_headers_and_redirects(self) -> None:
         result = AnalysisResult(
@@ -382,3 +407,17 @@ class TestJsonFormatter:
         parsed = json.loads(out)
         assert parsed["findings"] == []
         assert parsed["issues"] == []
+
+    def test_json_includes_suppressed_findings(self) -> None:
+        r = _result()
+        r.metadata[SUPPRESSED_FINDINGS_METADATA_KEY] = [
+            {"rule_id": "nginx.weak_ssl_protocols", "fingerprint": "abc"}
+        ]
+
+        out = JsonFormatter().format(ReportData(results=[r]))
+        parsed = json.loads(out)
+
+        assert parsed["summary"]["suppressed_findings"] == 1
+        assert parsed["suppressed_findings"] == [
+            {"rule_id": "nginx.weak_ssl_protocols", "fingerprint": "abc"}
+        ]

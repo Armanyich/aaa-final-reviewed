@@ -19,6 +19,7 @@ from webconf_audit.models import (
     SourceLocation,
     Severity,
 )
+from webconf_audit.suppressions import suppressed_findings as suppressed_finding_entries
 
 # Severity ordering: most critical first.
 _SEVERITY_ORDER: dict[str, int] = {
@@ -205,6 +206,7 @@ class ReportSummary(BaseModel):
 
     total_findings: int = 0
     total_issues: int = 0
+    suppressed_findings: int = 0
     suppressed_duplicates: int = 0
     by_severity: dict[str, int] = Field(default_factory=lambda: {s: 0 for s in _ALL_SEVERITIES})
     by_mode: dict[str, int] = Field(default_factory=dict)
@@ -271,6 +273,10 @@ class ReportData(BaseModel):
                 )
 
         total_issues = sum(len(result.issues) for result in self.results)
+        suppressed_total = sum(
+            len(suppressed_finding_entries(result))
+            for result in self.results
+        )
 
         return ReportSummary(
             total_findings=sum(
@@ -278,6 +284,7 @@ class ReportData(BaseModel):
                 for _, deduplicated in deduplicated_results
             ),
             total_issues=total_issues,
+            suppressed_findings=suppressed_total,
             suppressed_duplicates=suppressed,
             by_severity=by_severity,
             by_mode=by_mode,
@@ -323,10 +330,13 @@ class TextFormatter:
         for result, result_findings in deduplicated_results:
             lines.extend(_result_section_lines(result, result_findings, multi=multi))
 
-        lines.append(
+        total_line = (
             f"Total: {summary.total_findings} findings,"
             f" {summary.total_issues} issues"
         )
+        if summary.suppressed_findings:
+            total_line += f", {summary.suppressed_findings} suppressed"
+        lines.append(total_line)
         return "\n".join(lines)
 
 
@@ -366,6 +376,8 @@ def _report_summary_lines(
         ),
         f"  Analysis issues: {summary.total_issues}",
     ]
+    if summary.suppressed_findings > 0:
+        lines.append(f"  Suppressed findings: {summary.suppressed_findings}")
     if summary.suppressed_duplicates > 0:
         lines.append(
             f"  ({summary.suppressed_duplicates} universal finding(s)"
@@ -479,6 +491,7 @@ class JsonFormatter:
                 _finding_payload(result, finding)
                 for result, finding in top_level_findings
             ],
+            "suppressed_findings": _suppressed_finding_payloads(report.results),
             "issues": [i.model_dump() for i in report.all_issues],
         }
         return json.dumps(payload, indent=2, ensure_ascii=False)
@@ -511,6 +524,13 @@ def _result_payload(result: AnalysisResult) -> dict[str, object]:
         for finding in result.findings
     ]
     return payload
+
+
+def _suppressed_finding_payloads(results: list[AnalysisResult]) -> list[dict[str, object]]:
+    payloads: list[dict[str, object]] = []
+    for result in results:
+        payloads.extend(suppressed_finding_entries(result))
+    return payloads
 
 
 def _finding_payload(result: AnalysisResult, finding: Finding) -> dict[str, object]:

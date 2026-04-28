@@ -11,6 +11,7 @@ from webconf_audit.local.nginx import analyze_nginx_config
 from webconf_audit.models import AnalysisResult, Severity
 from webconf_audit.report import JsonFormatter, ReportData, TextFormatter, deduplicate_findings
 from webconf_audit.rule_registry import RuleCategory
+from webconf_audit.suppressions import apply_suppressions, load_suppression_file
 
 app = typer.Typer(help="Web server configuration security audit tool")
 
@@ -37,20 +38,58 @@ _SEVERITY_RANK: dict[str, int] = {
 }
 
 
+def _suppressions_option() -> str | None:
+    return typer.Option(
+        None,
+        "--suppressions",
+        help="Override the suppression YAML file path.",
+    )
+
+
 def _output_result(
     result: AnalysisResult,
     fmt: OutputFormat = OutputFormat.text,
     fail_on: FailOnSeverity | None = None,
+    suppressions_path: str | None = None,
 ) -> None:
+    suppression_load_failed = _apply_suppressions(
+        result, suppressions_path, load_default=fail_on is not None,
+    )
     report = ReportData(results=[result])
     formatter = TextFormatter() if fmt == OutputFormat.text else JsonFormatter()
     typer.echo(formatter.format(report))
-    exit_code = _ci_exit_code(result, fail_on)
+    exit_code = _ci_exit_code(
+        result,
+        fail_on,
+        explicit_suppression_error=suppressions_path is not None and suppression_load_failed,
+    )
     if exit_code:
         raise typer.Exit(exit_code)
 
 
-def _ci_exit_code(result: AnalysisResult, fail_on: FailOnSeverity | None) -> int:
+def _apply_suppressions(
+    result: AnalysisResult,
+    suppressions_path: str | None,
+    *,
+    load_default: bool,
+) -> bool:
+    suppression_set = load_suppression_file(suppressions_path, load_default=load_default)
+    result.issues.extend(suppression_set.issues)
+    apply_suppressions(result, suppression_set)
+    return any(
+        issue.level == "error" and issue.code.startswith("suppression_")
+        for issue in suppression_set.issues
+    )
+
+
+def _ci_exit_code(
+    result: AnalysisResult,
+    fail_on: FailOnSeverity | None,
+    *,
+    explicit_suppression_error: bool = False,
+) -> int:
+    if explicit_suppression_error:
+        return 1
     if fail_on is None:
         return 0
     if any(issue.level == "error" for issue in result.issues):
@@ -73,9 +112,10 @@ def analyze_nginx(
         "--fail-on",
         help="Exit 2 when unsuppressed findings at or above this severity exist.",
     ),
+    suppressions: str | None = _suppressions_option(),
 ) -> None:
     result = analyze_nginx_config(config_path)
-    _output_result(result, output_format, fail_on)
+    _output_result(result, output_format, fail_on, suppressions)
 
 
 @app.command("analyze-apache")
@@ -89,9 +129,10 @@ def analyze_apache(
         "--fail-on",
         help="Exit 2 when unsuppressed findings at or above this severity exist.",
     ),
+    suppressions: str | None = _suppressions_option(),
 ) -> None:
     result = analyze_apache_config(config_path)
-    _output_result(result, output_format, fail_on)
+    _output_result(result, output_format, fail_on, suppressions)
 
 
 @app.command("analyze-lighttpd")
@@ -115,11 +156,12 @@ def analyze_lighttpd(
         "--fail-on",
         help="Exit 2 when unsuppressed findings at or above this severity exist.",
     ),
+    suppressions: str | None = _suppressions_option(),
 ) -> None:
     result = analyze_lighttpd_config(
         config_path, execute_shell=execute_shell, host=host,
     )
-    _output_result(result, output_format, fail_on)
+    _output_result(result, output_format, fail_on, suppressions)
 
 
 @app.command("analyze-iis")
@@ -151,6 +193,7 @@ def analyze_iis(
         "--fail-on",
         help="Exit 2 when unsuppressed findings at or above this severity exist.",
     ),
+    suppressions: str | None = _suppressions_option(),
 ) -> None:
     kwargs: dict[str, object] = {}
     if machine_config is not None:
@@ -161,7 +204,7 @@ def analyze_iis(
         kwargs["use_tls_registry"] = False
 
     result = analyze_iis_config(config_path, **kwargs)
-    _output_result(result, output_format, fail_on)
+    _output_result(result, output_format, fail_on, suppressions)
 
 
 def _parse_ports(raw: str) -> tuple[int, ...]:
@@ -215,12 +258,13 @@ def analyze_external(
         "--fail-on",
         help="Exit 2 when unsuppressed findings at or above this severity exist.",
     ),
+    suppressions: str | None = _suppressions_option(),
 ) -> None:
     parsed_ports: tuple[int, ...] | None = None
     if ports is not None:
         parsed_ports = _parse_ports(ports)
     result = analyze_external_target(target, scan_ports=scan_ports, ports=parsed_ports)
-    _output_result(result, output_format, fail_on)
+    _output_result(result, output_format, fail_on, suppressions)
 
 
 @app.command("list-rules")

@@ -86,6 +86,24 @@ Exit codes in CI-gating mode:
 JSON findings include a stable `fingerprint` field that is designed for CI,
 future suppressions, and baseline/diff reporting.
 
+When `--fail-on` is used, `.webconf-audit-ignore.yml` is read from the current
+working directory if it exists. Suppressions require `rule_id`, either a
+`fingerprint` or locator fields, a human-readable `reason`, and an `expires`
+date. Expired suppressions stop hiding findings and are reported as analysis
+issues.
+
+```yaml
+suppressions:
+  - rule_id: nginx.server_tokens_on
+    source: nginx.conf
+    line: 12
+    reason: Accepted for staging until the shared image is rebuilt.
+    expires: 2026-05-31
+```
+
+Use `--suppressions <path>` to point at a non-default suppression file. Full CI
+examples are available in [docs/ci-integration.md](docs/ci-integration.md).
+
 ## Local analysis pipeline
 
 Each local analyzer:

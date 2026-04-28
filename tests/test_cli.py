@@ -693,6 +693,152 @@ def test_fail_on_exits_1_when_analysis_has_error_issue(monkeypatch) -> None:
     assert "apache_parse_error" in result.stdout
 
 
+def test_fail_on_uses_default_suppression_file(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.weak_ssl_protocols",
+                    title="Weak SSL protocols",
+                    severity="medium",
+                    description="desc",
+                    recommendation="rec",
+                    location=SourceLocation(
+                        mode="local",
+                        kind="file",
+                        file_path="nginx.conf",
+                        line=7,
+                    ),
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    with runner.isolated_filesystem():
+        Path(".webconf-audit-ignore.yml").write_text(
+            "\n".join(
+                [
+                    "suppressions:",
+                    "  - rule_id: nginx.weak_ssl_protocols",
+                    "    source: nginx.conf",
+                    "    line: 7",
+                    "    reason: accepted during migration",
+                    "    expires: 2099-01-01",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        result = runner.invoke(app, ["analyze-nginx", "nginx.conf", "--fail-on", "medium"])
+
+    assert result.exit_code == 0
+    assert "Findings: 0" in result.stdout
+    assert "Suppressed findings: 1" in result.stdout
+
+
+def test_default_suppression_file_is_not_loaded_without_ci_gate(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.weak_ssl_protocols",
+                    title="Weak SSL protocols",
+                    severity="medium",
+                    description="desc",
+                    recommendation="rec",
+                    location=SourceLocation(
+                        mode="local",
+                        kind="file",
+                        file_path="nginx.conf",
+                        line=7,
+                    ),
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    with runner.isolated_filesystem():
+        Path(".webconf-audit-ignore.yml").write_text(
+            "\n".join(
+                [
+                    "suppressions:",
+                    "  - rule_id: nginx.weak_ssl_protocols",
+                    "    source: nginx.conf",
+                    "    line: 7",
+                    "    reason: accepted during migration",
+                    "    expires: 2099-01-01",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        result = runner.invoke(app, ["analyze-nginx", "nginx.conf"])
+
+    assert result.exit_code == 0
+    assert "Findings: 1" in result.stdout
+    assert "Suppressed findings" not in result.stdout
+
+
+def test_explicit_missing_suppression_file_fails_ci_gate(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[],
+            issues=[],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    result = runner.invoke(
+        app,
+        [
+            "analyze-nginx",
+            "nginx.conf",
+            "--fail-on",
+            "medium",
+            "--suppressions",
+            "missing.yml",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "suppression_file_not_found" in result.stdout
+
+
+def test_explicit_missing_suppression_file_fails_without_ci_gate(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[],
+            issues=[],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    result = runner.invoke(
+        app,
+        [
+            "analyze-nginx",
+            "nginx.conf",
+            "--suppressions",
+            "missing.yml",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "suppression_file_not_found" in result.stdout
+
+
 def test_without_fail_on_keeps_interactive_exit_zero(monkeypatch) -> None:
     def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
         return AnalysisResult(
