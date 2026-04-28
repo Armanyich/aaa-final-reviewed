@@ -75,7 +75,9 @@ Use these labels in follow-up PRs:
 
 ## Work Order
 
-1. Map existing rules to ASVS 5.0.0 where the match is direct.
+1. Map existing rules to ASVS 5.0.0 where the match is direct. The first pass
+   is listed below; a follow-up PR should write the reviewed references into
+   `docs/rule-coverage.md`.
 2. Walk CIS NGINX Benchmark 3.0.0 and fill Nginx CIS matches plus a Nginx gap
    table.
 3. Walk CIS Apache HTTP Server 2.4 Benchmark 2.3.0 and fill Apache CIS matches
@@ -88,6 +90,107 @@ Use these labels in follow-up PRs:
 6. Implement new rules in small PRs. If a candidate needs parser or probe
    depth, land that depth first.
 
+## ASVS 5.0.0 First Pass
+
+This first ASVS pass is intentionally limited to requirements that a web server
+configuration analyzer or black-box HTTP/TLS probe can observe. ASVS remains an
+application verification standard; `webconf-audit` should only claim coverage
+when the scanner can see the relevant deployment signal.
+
+Primary ASVS chapters for the current rule set:
+
+- [V3 Web Frontend Security](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x12-V3-Web-Frontend-Security.md)
+- [V12 Secure Communication](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x21-V12-Secure-Communication.md)
+- [V13 Configuration](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x22-V13-Configuration.md)
+- [V16 Security Logging and Error Handling](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md)
+
+### Direct Coverage Candidates
+
+These requirements have enough current signal to justify adding ASVS references
+to `docs/rule-coverage.md` after review:
+
+- `v5.0.0-12.1.1` - TLS protocol version posture. Covered by weak protocol
+  rules such as `universal.weak_tls_protocol`, `nginx.weak_ssl_protocols`,
+  and external TLS protocol probes.
+- `v5.0.0-12.1.2` - recommended cipher suite posture. Covered for known-weak
+  cipher detection by `universal.weak_tls_ciphers`,
+  `lighttpd.weak_ssl_cipher_list`, and `external.weak_cipher_suite`.
+- `v5.0.0-12.2.1` - HTTPS must not fall back to cleartext. Covered by
+  HTTPS/TLS intent and redirect findings such as
+  `universal.tls_intent_without_config`, `external.https_not_available`, and
+  `external.http_not_redirected_to_https`.
+- `v5.0.0-12.2.2` - publicly trusted certificate posture. Covered by
+  certificate probes including `external.tls_certificate_self_signed`,
+  `external.cert_chain_incomplete`, `external.cert_san_mismatch`,
+  and `external.certificate_expired`.
+- `v5.0.0-3.3.1`, `v5.0.0-3.3.2`, and `v5.0.0-3.3.4` - observable cookie
+  security attributes. Covered by the external cookie rules for `Secure`,
+  `SameSite`, `SameSite=None` plus `Secure`, and `HttpOnly`.
+- `v5.0.0-3.4.1` - HSTS response header. Covered by universal, local, and
+  external HSTS rules, including max-age and includeSubDomains probes.
+- `v5.0.0-3.4.2` - CORS origin restrictions. Partly covered where the runtime
+  response exposes wildcard origins or wildcard origins with credentials.
+- `v5.0.0-3.4.3` - CSP response header. Covered for missing CSP and the
+  existing unsafe-inline / unsafe-eval runtime checks; advanced policy quality
+  remains a gap below.
+- `v5.0.0-3.4.4` - `X-Content-Type-Options: nosniff`. Covered by universal,
+  local, and external missing/invalid header checks.
+- `v5.0.0-3.4.5` - Referrer-Policy. Covered by missing/unsafe Referrer-Policy
+  checks where headers are visible.
+- `v5.0.0-3.4.8` - COOP. Covered by `external.coop_missing` for observable
+  runtime responses.
+- `v5.0.0-13.4.1` - source control metadata must not be exposed. Covered by
+  external `.git` and `.svn` metadata probes.
+- `v5.0.0-13.4.2` - production debug features must be disabled. Covered for
+  web-server-visible cases such as IIS debug / detailed error settings and
+  external debug endpoints (`phpinfo`, ELMAH, ASP.NET trace).
+- `v5.0.0-13.4.3` - directory listings must not be exposed unless intended.
+  Covered by universal and local directory listing rules.
+- `v5.0.0-13.4.4` - TRACE must not be supported in production. Covered by
+  Apache/IIS local rules and external TRACE probes.
+- `v5.0.0-13.4.5` - documentation and monitoring endpoints should not be
+  exposed unless intended. Covered by status/info endpoint rules.
+- `v5.0.0-13.4.6` - backend component versions should not be disclosed.
+  Covered by server identification, `Server`, `X-Powered-By`,
+  `X-AspNet-Version`, and server-token rules.
+- `v5.0.0-16.5.1` - generic errors for unexpected/sensitive failures. Covered
+  only for web-server-visible detailed error pages and framework diagnostics.
+
+### Partial Or Follow-up Gaps
+
+These ASVS requirements are relevant but should not be marked fully covered
+until the listed follow-up exists:
+
+- `v5.0.0-3.3.1` - cookie prefix guidance is not fully checked. Add a cookie
+  prefix probe if we want to distinguish `__Host-` and `__Secure-` posture.
+- `v5.0.0-3.4.3` - CSP minimum policy quality is deeper than missing /
+  unsafe-inline / unsafe-eval. Add checks for `object-src 'none'`, `base-uri
+  'none'`, nonce/hash usage, and per-response policy only after deciding how
+  strict the external probe should be.
+- `v5.0.0-3.4.6` - ASVS prefers CSP `frame-ancestors`; current X-Frame-Options
+  checks are useful but not an exact ASVS 5.0.0 match. Add local/external
+  `frame-ancestors` checks before claiming full coverage.
+- `v5.0.0-3.4.7` - CSP reporting endpoint is not checked today. Add a direct
+  runtime rule for `report-uri` / `report-to` if we decide this is valuable.
+- `v5.0.0-3.5.1` through `v5.0.0-3.5.3` - CSRF and safe-method semantics are
+  application behavior. Existing dangerous-method probes help, but they do not
+  prove anti-forgery controls.
+- `v5.0.0-3.5.8` - CORP is observable and `external.corp_missing` exists, but
+  the rule cannot know whether the response is an authenticated resource.
+- `v5.0.0-12.1.2` - forward secrecy and preference order require richer cipher
+  evaluation than simple weak-pattern detection.
+- `v5.0.0-12.1.4` - OCSP stapling is only partly represented for Nginx. Add
+  cross-server local checks and/or external stapling probes before claiming
+  general coverage.
+- `v5.0.0-12.1.5` - ECH is not checked. Treat as `probe-depth` and likely low
+  priority until server support is common enough for useful findings.
+- `v5.0.0-13.4.7` - extension allowlisting is broader than current sensitive
+  path probes. Existing rules cover common leaks, not a full allowlist model.
+- `v5.0.0-16.1.1` through `v5.0.0-16.4.3` - application security logging
+  inventory, event semantics, and log protection are mostly outside current
+  web server config/probe visibility. Local access/error-log presence can be
+  supporting evidence, not complete ASVS coverage.
+
 ## Initial Gap Backlog
 
 These are starting candidates, not final claims that a specific benchmark
@@ -96,7 +199,7 @@ standard section before implementation.
 
 | ID | Area | Gap type | Priority | Candidate work |
 | --- | --- | --- | --- | --- |
-| STD-GAP-001 | ASVS 5.0.0 | covered | P1 | Add ASVS references for existing TLS, HTTPS redirect, HSTS, cookie, CORS, security-header, and sensitive-path exposure rules where the requirement match is exact. |
+| STD-GAP-001 | ASVS 5.0.0 | covered | P1 | Review the first-pass ASVS candidates above, then add exact ASVS references for already-covered TLS, HTTPS redirect, HSTS, cookie, CORS, security-header, and sensitive-path exposure rules. |
 | STD-GAP-002 | Nginx CIS | covered | P1 | Fill CIS references for existing Nginx checks such as `server_tokens_on`, `autoindex_on`, logging, TLS protocol/cipher, request-size, and access-control rules after the NGINX 3.0.0 benchmark walk. |
 | STD-GAP-003 | Nginx CIS | direct-rule | P2 | Validate and potentially add Nginx TLS hardening rules not currently represented, such as session ticket, OCSP stapling completeness, or DH parameter posture checks. |
 | STD-GAP-004 | Nginx CIS | host-depth | P3 | Classify Nginx file ownership, permissions, package, service user, and filesystem layout recommendations as host-depth unless an explicit host mode is added. |
@@ -108,6 +211,8 @@ standard section before implementation.
 | STD-GAP-010 | IIS legacy CIS | research | P3 | Decide whether unsupported CIS IIS 7/8 documents should be used only as historical notes, not as primary compliance references. |
 | STD-GAP-011 | External probes | covered | P1 | Add ASVS references for observable runtime behavior: TLS protocol negotiation, weak cipher negotiation, certificate validity, security headers, dangerous methods, and exposed sensitive files. |
 | STD-GAP-012 | Standards output | direct-rule | P2 | After references stabilize, add optional report grouping by standard (`--group-by standard` or JSON `standards`) without changing rule behavior. |
+| STD-GAP-013 | ASVS 5.0.0 | direct-rule | P2 | Add CSP quality probes for `frame-ancestors`, `object-src`, `base-uri`, and reporting directives after deciding the desired strictness. |
+| STD-GAP-014 | ASVS 5.0.0 | probe-depth | P3 | Extend TLS probing for forward secrecy, cipher preference, OCSP stapling, and ECH before claiming deeper V12 coverage. |
 
 ## PR Slicing
 
