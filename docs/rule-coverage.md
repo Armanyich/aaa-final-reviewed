@@ -106,49 +106,128 @@ Mapping rationale (universal rules):
 
 Count: 41
 
+Stage 2 step 3 mapping: **CWE / OWASP complete** for this group. The CIS
+column is empty even though a *CIS Nginx Benchmark* exists at
+[cisecurity.org](https://www.cisecurity.org/benchmark/nginx) — exact section
+numbers will be added in a separate gap-analysis PR (Stage 2 step 4) after a
+full benchmark walk-through, so we do not write references that may drift
+from the published version. Several rules are operational anti-patterns or
+deprecated controls; their CWE/OWASP cells are intentionally empty (see
+rationale).
+
 | Rule ID | Severity | Input | Tags | CWE | OWASP | CIS / Vendor |
 | --- | --- | --- | --- | --- | --- | --- |
-| `nginx.alias_without_trailing_slash` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.allow_all_with_deny_all` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.autoindex_on` | medium | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.duplicate_listen` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.executable_scripts_allowed_in_uploads` | medium | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.if_in_location` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_access_log` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_access_restrictions_on_sensitive_locations` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_allowed_methods_restriction_for_uploads` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_auth_basic_user_file` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_backup_file_deny` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_client_body_timeout` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_client_header_timeout` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_client_max_body_size` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_content_security_policy` | low | ast | headers | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_error_log` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_hidden_files_deny` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_hsts_header` | low | ast | headers, tls | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_http2_on_tls_listener` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_http_method_restrictions` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_keepalive_timeout` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_limit_conn` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_limit_conn_zone` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_limit_req` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_limit_req_zone` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_log_format` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_permissions_policy` | low | ast | headers | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_referrer_policy` | low | ast | headers | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_send_timeout` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_server_name` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_ssl_certificate` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_ssl_certificate_key` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_ssl_ciphers` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_ssl_prefer_server_ciphers` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_x_content_type_options` | low | ast | headers | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_x_frame_options` | low | ast | headers | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.missing_x_xss_protection` | low | ast | headers | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.server_tokens_on` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.ssl_stapling_missing_resolver` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.ssl_stapling_without_verify` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `nginx.weak_ssl_protocols` | medium | ast | - | _TBD_ | _TBD_ | _TBD_ |
+| `nginx.alias_without_trailing_slash` | low | ast | - | [CWE-22](https://cwe.mitre.org/data/definitions/22.html) | [A01:2021](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) | - |
+| `nginx.allow_all_with_deny_all` | low | ast | - | [CWE-863](https://cwe.mitre.org/data/definitions/863.html) | [A01:2021](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) | - |
+| `nginx.autoindex_on` | medium | ast | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.duplicate_listen` | low | ast | - | - | - | - |
+| `nginx.executable_scripts_allowed_in_uploads` | medium | ast | - | [CWE-434](https://cwe.mitre.org/data/definitions/434.html) | [A04:2021](https://owasp.org/Top10/A04_2021-Insecure_Design/) | - |
+| `nginx.if_in_location` | low | ast | - | - | - | - |
+| `nginx.missing_access_log` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - |
+| `nginx.missing_access_restrictions_on_sensitive_locations` | low | ast | - | [CWE-284](https://cwe.mitre.org/data/definitions/284.html) | [A01:2021](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) | - |
+| `nginx.missing_allowed_methods_restriction_for_uploads` | low | ast | - | [CWE-650](https://cwe.mitre.org/data/definitions/650.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_auth_basic_user_file` | low | ast | - | [CWE-287](https://cwe.mitre.org/data/definitions/287.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - |
+| `nginx.missing_backup_file_deny` | low | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_client_body_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - |
+| `nginx.missing_client_header_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - |
+| `nginx.missing_client_max_body_size` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `nginx.missing_content_security_policy` | low | ast | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_error_log` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - |
+| `nginx.missing_hidden_files_deny` | low | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_hsts_header` | low | ast | headers, tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_http2_on_tls_listener` | low | ast | - | - | - | - |
+| `nginx.missing_http_method_restrictions` | low | ast | - | [CWE-650](https://cwe.mitre.org/data/definitions/650.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_keepalive_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - |
+| `nginx.missing_limit_conn` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `nginx.missing_limit_conn_zone` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `nginx.missing_limit_req` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `nginx.missing_limit_req_zone` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `nginx.missing_log_format` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - |
+| `nginx.missing_permissions_policy` | low | ast | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_referrer_policy` | low | ast | headers | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_send_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - |
+| `nginx.missing_server_name` | low | ast | - | - | - | - |
+| `nginx.missing_ssl_certificate` | low | ast | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `nginx.missing_ssl_certificate_key` | low | ast | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `nginx.missing_ssl_ciphers` | low | ast | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `nginx.missing_ssl_prefer_server_ciphers` | low | ast | - | [CWE-757](https://cwe.mitre.org/data/definitions/757.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `nginx.missing_x_content_type_options` | low | ast | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_x_frame_options` | low | ast | headers | [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.missing_x_xss_protection` | low | ast | headers | - | - | - |
+| `nginx.server_tokens_on` | low | ast | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.ssl_stapling_missing_resolver` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `nginx.ssl_stapling_without_verify` | low | ast | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `nginx.weak_ssl_protocols` | medium | ast | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+
+Mapping rationale (nginx rules):
+
+- `alias_without_trailing_slash` -- a misconfigured `alias` allows path
+  traversal outside the intended root: CWE-22 (path traversal), OWASP A01.
+- `allow_all_with_deny_all` -- conflicting `allow all` / `deny all` directives
+  let nginx pick the first match, so the intended access rules can be
+  bypassed: CWE-863 (incorrect authorization), OWASP A01.
+- `autoindex_on` -- direct match for CWE-548; categorised as A05 because the
+  default is safe and the operator must explicitly enable listing.
+- `duplicate_listen`, `if_in_location`, `missing_http2_on_tls_listener`,
+  `missing_server_name` -- operational anti-patterns and best-practice
+  hints, not vulnerabilities; CWE/OWASP cells stay empty.
+- `executable_scripts_allowed_in_uploads` -- upload directories that also
+  serve PHP/CGI are the textbook CWE-434 (unrestricted upload of dangerous
+  file types). Categorised as OWASP A04 (insecure design): the issue is the
+  combination of upload + script execution, not a single misconfig.
+- `missing_access_log`, `missing_error_log`, `missing_log_format` -- without
+  logs you cannot detect or investigate attacks: CWE-778, OWASP A09.
+- `missing_access_restrictions_on_sensitive_locations` -- /admin, /private,
+  /backup left open to the public: CWE-284 (improper access control),
+  OWASP A01.
+- `missing_allowed_methods_restriction_for_uploads`,
+  `missing_http_method_restrictions` -- not pinning the allowed HTTP methods
+  exposes CWE-650 (trusting HTTP permission methods), tracked as
+  OWASP A05.
+- `missing_auth_basic_user_file` -- enabling `auth_basic` without
+  `auth_basic_user_file` leaves the location effectively unauthenticated:
+  CWE-287 (improper authentication), OWASP A07.
+- `missing_backup_file_deny`, `missing_hidden_files_deny` -- direct match for
+  CWE-538 (file/directory information exposure); OWASP A05.
+- `missing_client_body_timeout`, `missing_client_header_timeout`,
+  `missing_keepalive_timeout`, `missing_send_timeout` -- absence of
+  per-connection timeouts lets slow-loris-style clients hold sockets open
+  forever: CWE-400 (uncontrolled resource consumption). OWASP cells empty
+  because the 2021 Top 10 has no clean home for DoS hardening.
+- `missing_client_max_body_size`, `missing_limit_conn`, `missing_limit_conn_zone`,
+  `missing_limit_req`, `missing_limit_req_zone` -- no upper bound / rate
+  limit on bodies, connections, or requests: CWE-770 (allocation without
+  limits or throttling). OWASP cells empty for the same reason.
+- `missing_content_security_policy`, `missing_x_content_type_options`,
+  `missing_permissions_policy` -- protective response headers; CWE-693
+  (protection mechanism failure), OWASP A05.
+- `missing_hsts_header` -- missing HSTS allows downgrade to HTTP:
+  CWE-319, OWASP A05 (matches the universal HSTS rule's mapping).
+- `missing_referrer_policy` -- as in the universal table, no clean CWE for
+  "policy not set"; we only keep OWASP A05.
+- `missing_ssl_certificate`, `missing_ssl_certificate_key` -- listening on
+  443 with `ssl` but no cert / key configured leaves the listener unable to
+  establish TLS, so HTTPS to it fails: CWE-319, OWASP A02. As with the
+  lighttpd `ssl_pemfile_missing` rule, the failure mode is connection
+  refusal, not silent downgrade.
+- `missing_ssl_ciphers` -- relying on the OpenSSL default cipher list keeps
+  weak suites available on older builds: CWE-327, OWASP A02.
+- `missing_ssl_prefer_server_ciphers` -- letting the client drive cipher
+  selection enables downgrade attacks: CWE-757 (less-secure algorithm during
+  negotiation), OWASP A02.
+- `missing_x_frame_options` -- direct match for CWE-1021 (clickjacking),
+  OWASP A05.
+- `missing_x_xss_protection` -- the X-XSS-Protection header is deprecated and
+  modern browsers ignore it; we keep the rule for legacy hardening but leave
+  CWE/OWASP empty rather than mapping to controls that no longer apply.
+- `server_tokens_on` -- nginx version disclosure: CWE-200, OWASP A05.
+- `ssl_stapling_missing_resolver` -- enabling `ssl_stapling` without a
+  resolver silently disables stapling, but it is a configuration mistake
+  rather than a vulnerability class; CWE empty, OWASP A05 (misconfig).
+- `ssl_stapling_without_verify` -- accepting OCSP responses without
+  validation is CWE-295 (improper certificate validation), OWASP A02.
+- `weak_ssl_protocols` -- TLSv1.0 / TLSv1.1 / SSLv3 are textbook CWE-327,
+  OWASP A02 (matches the universal `weak_tls_protocol` rule).
 
 ### Apache (Local)
 
@@ -373,7 +452,7 @@ only where the mapping is honest:
 Progress:
 
 - [x] Universal rules (11)
-- [ ] Nginx local rules (41)
+- [x] Nginx local rules (41) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [ ] Apache local rules (27)
 - [x] Lighttpd local rules (15)
 - [ ] IIS local rules (20)

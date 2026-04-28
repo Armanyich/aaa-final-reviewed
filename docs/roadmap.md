@@ -168,6 +168,7 @@ Acceptance criteria:
 
 Stage 2 step 3 (standards mapping) is in progress. The inventory is exposed
 by `webconf-audit list-rules --format json` and `docs/rule-coverage.md`
-holds the standards mapping. Universal (11) and Lighttpd local rules (15)
-are mapped; remaining groups are filled one server family per PR, only
-where the mapping is honest. Next group: Nginx local rules.
+holds the standards mapping. Universal (11), Lighttpd (15) and Nginx (41)
+local rules are mapped for CWE / OWASP; CIS section numbers for Nginx will
+land together with Stage 2 step 4 gap analysis. Remaining groups: Apache
+local rules, IIS local rules, External probes.
