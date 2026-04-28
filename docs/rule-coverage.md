@@ -108,7 +108,7 @@ Count: 41
 
 Stage 2 mapping status: **CWE / OWASP complete; CIS existing-rule reference
 pass complete** for this group. CIS references come from a full walk-through
-of the *CIS NGINX Benchmark v3.0.0* (the `CIS NGINX 3.0.0` source listed on
+of the *CIS NGINX Benchmark v3.0.0* (the `CIS NGINX v3.0.0` source listed on
 [cisecurity.org](https://www.cisecurity.org/benchmark/nginx)). Cells that
 remain empty under `CIS / Vendor` describe rules that are operational
 anti-patterns, deprecated controls, or scoped narrower / wider than any
@@ -123,41 +123,41 @@ the benchmark covers but webconf-audit does not.
 | `nginx.duplicate_listen` | low | ast | - | - | - | - | - |
 | `nginx.executable_scripts_allowed_in_uploads` | medium | ast | - | [CWE-434](https://cwe.mitre.org/data/definitions/434.html) | [A04:2021](https://owasp.org/Top10/A04_2021-Insecure_Design/) | - | - |
 | `nginx.if_in_location` | low | ast | - | - | - | - | - |
-| `nginx.missing_access_log` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS NGINX 3.0.0 §3.2 |
-| `nginx.missing_access_restrictions_on_sensitive_locations` | low | ast | - | [CWE-284](https://cwe.mitre.org/data/definitions/284.html) | [A01:2021](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) | - | CIS NGINX 3.0.0 §5.1.1 (partial: detects any access control on sensitive paths, not specifically `allow`/`deny` IP filters) |
-| `nginx.missing_allowed_methods_restriction_for_uploads` | low | ast | - | [CWE-650](https://cwe.mitre.org/data/definitions/650.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX 3.0.0 §5.1.2 (partial: scoped to upload-like locations) |
+| `nginx.missing_access_log` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS NGINX v3.0.0 §3.2 |
+| `nginx.missing_access_restrictions_on_sensitive_locations` | low | ast | - | [CWE-284](https://cwe.mitre.org/data/definitions/284.html) | [A01:2021](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) | - | CIS NGINX v3.0.0 §5.1.1 (partial: detects any access control on sensitive paths, not specifically `allow`/`deny` IP filters) |
+| `nginx.missing_allowed_methods_restriction_for_uploads` | low | ast | - | [CWE-650](https://cwe.mitre.org/data/definitions/650.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX v3.0.0 §5.1.2 (partial: scoped to upload-like locations) |
 | `nginx.missing_auth_basic_user_file` | low | ast | - | [CWE-287](https://cwe.mitre.org/data/definitions/287.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - | - |
 | `nginx.missing_backup_file_deny` | low | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `nginx.missing_client_body_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX 3.0.0 §5.2.1 (partial: directive presence only; does not validate benchmark timeout value) |
-| `nginx.missing_client_header_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX 3.0.0 §5.2.1 (partial: directive presence only; does not validate benchmark timeout value) |
-| `nginx.missing_client_max_body_size` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX 3.0.0 §5.2.2 (partial: directive presence only; does not validate benchmark size policy) |
-| `nginx.missing_content_security_policy` | low | ast | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.3 (partial: presence only) | CIS NGINX 3.0.0 §5.3.2 (partial: presence only) |
-| `nginx.missing_error_log` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS NGINX 3.0.0 §3.3 (partial: directive presence; does not validate `info` log level) |
-| `nginx.missing_hidden_files_deny` | low | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX 3.0.0 §2.5.3 |
-| `nginx.missing_hsts_header` | low | ast | headers, tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.1 | CIS NGINX 3.0.0 §4.1.8 (partial: header presence only; does not validate HSTS policy value) |
+| `nginx.missing_client_body_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX v3.0.0 §5.2.1 (partial: directive presence only; does not validate benchmark timeout value) |
+| `nginx.missing_client_header_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX v3.0.0 §5.2.1 (partial: directive presence only; does not validate benchmark timeout value) |
+| `nginx.missing_client_max_body_size` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX v3.0.0 §5.2.2 (partial: directive presence only; does not validate benchmark size policy) |
+| `nginx.missing_content_security_policy` | low | ast | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.3 (partial: presence only) | CIS NGINX v3.0.0 §5.3.2 (partial: presence only) |
+| `nginx.missing_error_log` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS NGINX v3.0.0 §3.3 (partial: directive presence; does not validate `info` log level) |
+| `nginx.missing_hidden_files_deny` | low | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX v3.0.0 §2.5.3 |
+| `nginx.missing_hsts_header` | low | ast | headers, tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.1 | CIS NGINX v3.0.0 §4.1.8 (partial: header presence only; does not validate HSTS policy value) |
 | `nginx.missing_http2_on_tls_listener` | low | ast | - | - | - | - | - |
-| `nginx.missing_http_method_restrictions` | low | ast | - | [CWE-650](https://cwe.mitre.org/data/definitions/650.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX 3.0.0 §5.1.2 (partial: scoped to sensitive locations and `limit_except`, not a full approved-method policy) |
-| `nginx.missing_keepalive_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX 3.0.0 §2.4.3 (partial: directive presence; does not validate `<= 10` value) |
-| `nginx.missing_limit_conn` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX 3.0.0 §5.2.4 (partial: directive presence only; does not validate per-IP key or numeric limit) |
-| `nginx.missing_limit_conn_zone` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX 3.0.0 §5.2.4 (supporting directive; presence only) |
-| `nginx.missing_limit_req` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX 3.0.0 §5.2.5 (partial: directive presence only; does not validate per-IP key or rate policy) |
-| `nginx.missing_limit_req_zone` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX 3.0.0 §5.2.5 (supporting directive; presence only) |
-| `nginx.missing_log_format` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS NGINX 3.0.0 §3.1 (partial: directive presence; does not validate detailed log fields) |
+| `nginx.missing_http_method_restrictions` | low | ast | - | [CWE-650](https://cwe.mitre.org/data/definitions/650.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX v3.0.0 §5.1.2 (partial: scoped to sensitive locations and `limit_except`, not a full approved-method policy) |
+| `nginx.missing_keepalive_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX v3.0.0 §2.4.3 (partial: directive presence; does not validate `<= 10` value) |
+| `nginx.missing_limit_conn` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX v3.0.0 §5.2.4 (partial: directive presence only; does not validate per-IP key or numeric limit) |
+| `nginx.missing_limit_conn_zone` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX v3.0.0 §5.2.4 (supporting directive; presence only) |
+| `nginx.missing_limit_req` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX v3.0.0 §5.2.5 (partial: directive presence only; does not validate per-IP key or rate policy) |
+| `nginx.missing_limit_req_zone` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX v3.0.0 §5.2.5 (supporting directive; presence only) |
+| `nginx.missing_log_format` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - | CIS NGINX v3.0.0 §3.1 (partial: directive presence; does not validate detailed log fields) |
 | `nginx.missing_permissions_policy` | low | ast | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
-| `nginx.missing_referrer_policy` | low | ast | headers | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.5 | CIS NGINX 3.0.0 §5.3.3 (partial: header presence only; does not validate policy value) |
-| `nginx.missing_send_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX 3.0.0 §2.4.4 (partial: directive presence; does not validate `<= 10` value) |
+| `nginx.missing_referrer_policy` | low | ast | headers | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.5 | CIS NGINX v3.0.0 §5.3.3 (partial: header presence only; does not validate policy value) |
+| `nginx.missing_send_timeout` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX v3.0.0 §2.4.4 (partial: directive presence; does not validate `<= 10` value) |
 | `nginx.missing_server_name` | low | ast | - | - | - | - | - |
 | `nginx.missing_ssl_certificate` | low | ast | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - | - |
 | `nginx.missing_ssl_certificate_key` | low | ast | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - | - |
-| `nginx.missing_ssl_ciphers` | low | ast | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - | CIS NGINX 3.0.0 §4.1.5 (partial: directive presence; does not validate cipher list against the benchmark recommendation) |
+| `nginx.missing_ssl_ciphers` | low | ast | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - | CIS NGINX v3.0.0 §4.1.5 (partial: directive presence; does not validate cipher list against the benchmark recommendation) |
 | `nginx.missing_ssl_prefer_server_ciphers` | low | ast | - | [CWE-757](https://cwe.mitre.org/data/definitions/757.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - | - |
-| `nginx.missing_x_content_type_options` | low | ast | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.4 | CIS NGINX 3.0.0 §5.3.1 |
+| `nginx.missing_x_content_type_options` | low | ast | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.4 | CIS NGINX v3.0.0 §5.3.1 |
 | `nginx.missing_x_frame_options` | low | ast | headers | [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
 | `nginx.missing_x_xss_protection` | low | ast | headers | - | - | - | - |
-| `nginx.server_tokens_on` | low | ast | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | CIS NGINX 3.0.0 §2.5.1 |
-| `nginx.ssl_stapling_missing_resolver` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX 3.0.0 §4.1.7 (partial: resolver presence requirement only) |
-| `nginx.ssl_stapling_without_verify` | low | ast | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - | CIS NGINX 3.0.0 §4.1.7 (partial: stapling verification requirement) |
-| `nginx.weak_ssl_protocols` | medium | ast | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | ASVS v5.0.0-12.1.1 | CIS NGINX 3.0.0 §4.1.4 |
+| `nginx.server_tokens_on` | low | ast | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-13.4.6 | CIS NGINX v3.0.0 §2.5.1 |
+| `nginx.ssl_stapling_missing_resolver` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX v3.0.0 §4.1.7 (partial: resolver presence requirement only) |
+| `nginx.ssl_stapling_without_verify` | low | ast | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - | CIS NGINX v3.0.0 §4.1.7 (partial: stapling verification requirement) |
+| `nginx.weak_ssl_protocols` | medium | ast | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | ASVS v5.0.0-12.1.1 | CIS NGINX v3.0.0 §4.1.4 |
 
 Mapping rationale (nginx rules):
 
@@ -229,7 +229,7 @@ Mapping rationale (nginx rules):
 - `weak_ssl_protocols` -- TLSv1.0 / TLSv1.1 / SSLv3 are textbook CWE-327,
   OWASP A02 (matches the universal `weak_tls_protocol` rule).
 
-Nginx CIS 3.0.0 gap table:
+Nginx CIS v3.0.0 gap table:
 
 | CIS section | Gap type | Current coverage / follow-up |
 | --- | --- | --- |
