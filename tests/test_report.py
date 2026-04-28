@@ -12,6 +12,7 @@ from webconf_audit.models import (
 )
 from webconf_audit.report import JsonFormatter, ReportData, TextFormatter
 from webconf_audit.suppressions import SUPPRESSED_FINDINGS_METADATA_KEY
+from webconf_audit.cli import _ensure_all_rules_loaded
 
 
 # ---------------------------------------------------------------------------
@@ -347,6 +348,24 @@ class TestTextFormatter:
         assert "malformed_response_body" in out
         assert "server_header" in out
 
+    def test_can_group_findings_by_standard(self) -> None:
+        _ensure_all_rules_loaded()
+        r = _result(
+            findings=[
+                _finding(
+                    rule_id="universal.weak_tls_protocol",
+                    severity="medium",
+                    title="Weak TLS/SSL protocols enabled",
+                )
+            ]
+        )
+
+        out = TextFormatter(group_by="standard").format(ReportData(results=[r]))
+
+        assert "=== STANDARD CWE (1) ===" in out
+        assert "refs: CWE-327" in out
+        assert "=== STANDARD OWASP TOP 10 (1) ===" in out
+
 
 # ---------------------------------------------------------------------------
 # 7.1.2  JsonFormatter
@@ -486,6 +505,36 @@ class TestJsonFormatter:
         assert parsed["resolved_findings"] == [
             {"rule_id": "x.fixed", "fingerprint": "3" * 64}
         ]
+
+    def test_json_findings_include_standards_metadata(self) -> None:
+        _ensure_all_rules_loaded()
+        r = _result(
+            findings=[
+                _finding(
+                    rule_id="universal.weak_tls_protocol",
+                    severity="medium",
+                    title="Weak TLS/SSL protocols enabled",
+                )
+            ]
+        )
+
+        parsed = json.loads(JsonFormatter().format(ReportData(results=[r])))
+
+        finding = parsed["findings"][0]
+        assert {
+            "standard": "CWE",
+            "reference": "CWE-327",
+            "url": "https://cwe.mitre.org/data/definitions/327.html",
+            "coverage": "direct",
+        } in finding["standards"]
+        assert {
+            "standard": "CWE",
+            "reference": "CWE-327",
+            "url": "https://cwe.mitre.org/data/definitions/327.html",
+            "coverage": "direct",
+            "finding_count": 1,
+            "rule_ids": ["universal.weak_tls_protocol"],
+        } in parsed["standards"]
 
     def test_json_uses_baseline_diff_suppressed_findings_when_available(self) -> None:
         r = _result()

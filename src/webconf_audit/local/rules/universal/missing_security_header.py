@@ -12,6 +12,7 @@ from __future__ import annotations
 from webconf_audit.local.normalized import NormalizedConfig, NormalizedScope
 from webconf_audit.models import Finding, SourceLocation
 from webconf_audit.rule_registry import rule
+from webconf_audit.standards import asvs_5, cwe, owasp_top10_2021
 
 HeaderRule = tuple[str, str, str, str | None]
 
@@ -52,6 +53,11 @@ _HEADER_RULES: dict[str, HeaderRule] = {
     category="universal",
     input_kind="normalized",
     tags=("headers",),
+    standards=(
+        cwe(693),
+        owasp_top10_2021("A05:2021"),
+        asvs_5("3.4.4"),
+    ),
     order=104,
 )
 def check_x_content_type_options(config: NormalizedConfig) -> list[Finding]:
@@ -68,6 +74,10 @@ def check_x_content_type_options(config: NormalizedConfig) -> list[Finding]:
     category="universal",
     input_kind="normalized",
     tags=("headers",),
+    standards=(
+        cwe(1021),
+        owasp_top10_2021("A05:2021"),
+    ),
     order=105,
 )
 def check_x_frame_options(config: NormalizedConfig) -> list[Finding]:
@@ -84,6 +94,11 @@ def check_x_frame_options(config: NormalizedConfig) -> list[Finding]:
     category="universal",
     input_kind="normalized",
     tags=("headers",),
+    standards=(
+        cwe(693),
+        owasp_top10_2021("A05:2021"),
+        asvs_5("3.4.3", coverage="partial", note="Presence only."),
+    ),
     order=106,
 )
 def check_content_security_policy(config: NormalizedConfig) -> list[Finding]:
@@ -100,6 +115,10 @@ def check_content_security_policy(config: NormalizedConfig) -> list[Finding]:
     category="universal",
     input_kind="normalized",
     tags=("headers",),
+    standards=(
+        owasp_top10_2021("A05:2021"),
+        asvs_5("3.4.5"),
+    ),
     order=107,
 )
 def check_referrer_policy(config: NormalizedConfig) -> list[Finding]:

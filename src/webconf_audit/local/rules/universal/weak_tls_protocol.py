@@ -9,6 +9,7 @@ from __future__ import annotations
 from webconf_audit.local.normalized import NormalizedConfig
 from webconf_audit.models import Finding, SourceLocation
 from webconf_audit.rule_registry import rule
+from webconf_audit.standards import asvs_5, cwe, owasp_top10_2021
 
 RULE_ID = "universal.weak_tls_protocol"
 
@@ -24,6 +25,11 @@ _WEAK_PROTOCOLS = frozenset({"TLSv1", "TLSv1.0", "TLSv1.1", "SSLv2", "SSLv3"})
     category="universal",
     input_kind="normalized",
     tags=("tls",),
+    standards=(
+        cwe(327),
+        owasp_top10_2021("A02:2021"),
+        asvs_5("12.1.1"),
+    ),
     order=101,
 )
 def check(config: NormalizedConfig) -> list[Finding]:

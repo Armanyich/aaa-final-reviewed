@@ -8,6 +8,7 @@ from __future__ import annotations
 from webconf_audit.local.normalized import NormalizedConfig, NormalizedScope
 from webconf_audit.models import Finding, SourceLocation
 from webconf_audit.rule_registry import rule
+from webconf_audit.standards import asvs_5, cwe, owasp_top10_2021
 
 RULE_ID = "universal.missing_hsts"
 
@@ -21,6 +22,11 @@ RULE_ID = "universal.missing_hsts"
     category="universal",
     input_kind="normalized",
     tags=("headers", "tls"),
+    standards=(
+        cwe(319),
+        owasp_top10_2021("A05:2021"),
+        asvs_5("3.4.1"),
+    ),
     order=103,
 )
 def check(config: NormalizedConfig) -> list[Finding]:

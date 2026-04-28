@@ -172,7 +172,6 @@ ASVS 5.0.0, CIS NGINX Benchmark v3.0.0, CIS Apache HTTP Server 2.4 Benchmark
 v2.3.0, IIS / Windows Server hardening sources, and future standards-aware
 reporting.
 
-Current step: IIS / Windows source-of-truth mapping — the final documentation
-PR in the server-family standards triage. After review, continue with standards
-metadata in the rule registry / report formats, then start the first new rule
-PR from the prioritized backlog.
+Current step: standards metadata in the rule registry / report formats. This
+adds machine-readable standards references without changing detector behavior.
+After review, start the first new rule PR from the prioritized backlog.

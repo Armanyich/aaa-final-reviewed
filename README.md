@@ -60,6 +60,7 @@ Every `analyze-*` command supports text (default) and JSON output:
 ```bash
 webconf-audit analyze-nginx config.conf --format json
 webconf-audit analyze-external example.com -f json
+webconf-audit analyze-nginx config.conf --group-by standard
 ```
 
 The JSON envelope contains a generation timestamp, a summary, the
@@ -209,8 +210,8 @@ Filters: `--category` (`local`, `external`, `universal`),
 
 Use `--format json` to get a machine-readable inventory with the full
 `RuleMeta` payload (rule_id, severity, category, server_type,
-input_kind, tags, order, etc.). The full inventory and the standards
-mapping plan live in [docs/rule-coverage.md](docs/rule-coverage.md).
+input_kind, tags, standards, order, etc.). The full inventory and the
+standards mapping plan live in [docs/rule-coverage.md](docs/rule-coverage.md).
 
 The catalog currently contains 183 rules:
 

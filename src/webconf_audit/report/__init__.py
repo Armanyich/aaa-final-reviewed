@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
+from typing import Literal
 from typing_extensions import TypedDict
 
 from webconf_audit.fingerprints import finding_fingerprint
@@ -19,6 +20,7 @@ from webconf_audit.models import (
     SourceLocation,
     Severity,
 )
+from webconf_audit.rule_registry import StandardReference, registry
 from webconf_audit.suppressions import suppressed_findings as suppressed_finding_entries
 
 # Severity ordering: most critical first.
@@ -37,6 +39,9 @@ _ISSUE_LEVEL_ORDER: dict[str, int] = {
 }
 
 _ALL_SEVERITIES: list[Severity] = ["critical", "high", "medium", "low", "info"]
+_STANDARD_ORDER = ["CWE", "OWASP Top 10", "OWASP ASVS", "CIS", "Vendor", "Unmapped"]
+
+ReportGroupBy = Literal["severity", "standard"]
 
 
 class BaselineDiff(TypedDict, total=False):
@@ -332,6 +337,9 @@ def format_location(location: SourceLocation | None) -> str | None:
 class TextFormatter:
     """Render ReportData as human-readable terminal output."""
 
+    def __init__(self, *, group_by: ReportGroupBy = "severity") -> None:
+        self.group_by = group_by
+
     def format(self, report: ReportData) -> str:
         summary = report.summary()
         deduplicated_results, _ = _deduplicated_findings_by_result(report.results)
@@ -340,7 +348,14 @@ class TextFormatter:
         lines.extend(_baseline_diff_section_lines(report.baseline_diff))
 
         for result, result_findings in deduplicated_results:
-            lines.extend(_result_section_lines(result, result_findings, multi=multi))
+            lines.extend(
+                _result_section_lines(
+                    result,
+                    result_findings,
+                    multi=multi,
+                    group_by=self.group_by,
+                )
+            )
 
         total_line = (
             f"Total: {summary.total_findings} findings,"
@@ -453,12 +468,16 @@ def _result_section_lines(
     result_findings: list[Finding],
     *,
     multi: bool,
+    group_by: ReportGroupBy = "severity",
 ) -> list[str]:
     lines: list[str] = []
     if multi:
         lines.extend(_multi_target_header_lines(result))
     lines.extend(_external_section_lines(result))
-    lines.extend(_severity_section_lines(result_findings))
+    if group_by == "standard":
+        lines.extend(_standard_section_lines(result_findings))
+    else:
+        lines.extend(_severity_section_lines(result_findings))
     lines.extend(_issue_section_lines(result.issues))
     lines.extend(_diagnostic_section_lines(result.diagnostics))
     return lines
@@ -499,6 +518,58 @@ def _findings_by_severity(
 
 def _finding_lines(finding: Finding) -> list[str]:
     lines = [f"  [{finding.rule_id}] {finding.title}"]
+    location = format_location(finding.location)
+    if location:
+        lines.append(f"    location: {location}")
+    lines.append(f"    description: {finding.description}")
+    lines.append(f"    recommendation: {finding.recommendation}")
+    return lines
+
+
+def _standard_section_lines(result_findings: list[Finding]) -> list[str]:
+    lines: list[str] = []
+    groups = _findings_by_standard(result_findings)
+    for standard in _ordered_standard_names(groups):
+        entries = groups[standard]
+        lines.append(f"=== STANDARD {standard.upper()} ({len(entries)}) ===")
+        for finding, refs in entries:
+            lines.extend(_standard_finding_lines(finding, refs))
+        lines.append("")
+    return lines
+
+
+def _findings_by_standard(
+    result_findings: list[Finding],
+) -> dict[str, list[tuple[Finding, tuple[StandardReference, ...]]]]:
+    groups: dict[str, list[tuple[Finding, tuple[StandardReference, ...]]]] = {}
+    for finding in result_findings:
+        refs = _standards_for_rule(finding.rule_id)
+        if not refs:
+            groups.setdefault("Unmapped", []).append((finding, ()))
+            continue
+        refs_by_standard: dict[str, list[StandardReference]] = {}
+        for ref in refs:
+            refs_by_standard.setdefault(ref.standard, []).append(ref)
+        for standard, standard_refs in refs_by_standard.items():
+            groups.setdefault(standard, []).append((finding, tuple(standard_refs)))
+    return groups
+
+
+def _ordered_standard_names(
+    groups: dict[str, list[tuple[Finding, tuple[StandardReference, ...]]]],
+) -> list[str]:
+    known = [name for name in _STANDARD_ORDER if name in groups]
+    extra = sorted(name for name in groups if name not in _STANDARD_ORDER)
+    return known + extra
+
+
+def _standard_finding_lines(
+    finding: Finding,
+    refs: tuple[StandardReference, ...],
+) -> list[str]:
+    lines = [f"  [{finding.rule_id}] {finding.title} ({finding.severity})"]
+    if refs:
+        lines.append(f"    refs: {', '.join(_standard_ref_label(ref) for ref in refs)}")
     location = format_location(finding.location)
     if location:
         lines.append(f"    location: {location}")
@@ -558,6 +629,7 @@ class JsonFormatter:
             "resolved_findings": _diff_entries(baseline_diff, "resolved_findings"),
             "unchanged_findings": _diff_entries(baseline_diff, "unchanged_findings"),
             "suppressed_findings": suppressed_payloads,
+            "standards": _standards_summary_payload(top_level_findings),
             "issues": [i.model_dump() for i in report.all_issues],
         }
         return json.dumps(payload, indent=2, ensure_ascii=False)
@@ -618,7 +690,78 @@ def _suppressed_finding_payloads(results: list[AnalysisResult]) -> list[dict[str
 def finding_payload(result: AnalysisResult, finding: Finding) -> dict[str, object]:
     payload = finding.model_dump()
     payload["fingerprint"] = finding_fingerprint(result, finding)
+    standards = _standard_ref_payloads(finding.rule_id)
+    if standards:
+        payload["standards"] = standards
     return payload
+
+
+def _standards_for_rule(rule_id: str) -> tuple[StandardReference, ...]:
+    meta = registry.get_meta(rule_id)
+    if meta is None:
+        return ()
+    return meta.standards
+
+
+def _standard_ref_payloads(rule_id: str) -> list[dict[str, object]]:
+    return [_standard_ref_payload(ref) for ref in _standards_for_rule(rule_id)]
+
+
+def _standard_ref_payload(ref: StandardReference) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "standard": ref.standard,
+        "reference": ref.reference,
+        "coverage": ref.coverage,
+    }
+    if ref.url is not None:
+        payload["url"] = ref.url
+    if ref.note is not None:
+        payload["note"] = ref.note
+    return payload
+
+
+def _standards_summary_payload(
+    finding_pairs: list[tuple[AnalysisResult, Finding]],
+) -> list[dict[str, object]]:
+    buckets: dict[tuple[str, str], dict[str, object]] = {}
+    for _result, finding in finding_pairs:
+        for ref in _standards_for_rule(finding.rule_id):
+            key = (ref.standard, ref.reference)
+            bucket = buckets.setdefault(
+                key,
+                {
+                    **_standard_ref_payload(ref),
+                    "finding_count": 0,
+                    "rule_ids": set(),
+                },
+            )
+            bucket["finding_count"] = int(bucket["finding_count"]) + 1
+            rule_ids = bucket["rule_ids"]
+            if isinstance(rule_ids, set):
+                rule_ids.add(finding.rule_id)
+
+    payload: list[dict[str, object]] = []
+    for bucket in buckets.values():
+        rule_ids = bucket["rule_ids"]
+        if isinstance(rule_ids, set):
+            bucket["rule_ids"] = sorted(rule_ids)
+        payload.append(bucket)
+    payload.sort(key=_standard_summary_sort_key)
+    return payload
+
+
+def _standard_summary_sort_key(entry: dict[str, object]) -> tuple[int, str, str]:
+    standard = str(entry.get("standard", ""))
+    reference = str(entry.get("reference", ""))
+    order = _STANDARD_ORDER.index(standard) if standard in _STANDARD_ORDER else 999
+    return (order, standard, reference)
+
+
+def _standard_ref_label(ref: StandardReference) -> str:
+    label = ref.reference
+    if ref.coverage != "direct":
+        label = f"{label} ({ref.coverage})"
+    return label
 
 
 # ---------------------------------------------------------------------------
@@ -885,6 +1028,7 @@ __all__ = [
     "JsonFormatter",
     "BaselineDiff",
     "ReportData",
+    "ReportGroupBy",
     "ReportSummary",
     "TextFormatter",
     "UNIVERSAL_TO_SPECIFIC_MAP",

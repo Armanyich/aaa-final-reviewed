@@ -115,12 +115,41 @@ class TestListRules:
             "server_type",
             "input_kind",
             "tags",
+            "standards",
             "condition",
             "order",
         }
         for entry in payload:
             assert set(entry.keys()) == expected_keys
             assert isinstance(entry["tags"], list)
+            assert isinstance(entry["standards"], list)
+
+    def test_list_rules_json_includes_standards_metadata(self) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "list-rules",
+                "--format",
+                "json",
+                "--category",
+                "universal",
+                "--tag",
+                "tls",
+            ],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        weak_tls = next(
+            entry
+            for entry in payload
+            if entry["rule_id"] == "universal.weak_tls_protocol"
+        )
+        assert {
+            "standard": "CWE",
+            "reference": "CWE-327",
+            "url": "https://cwe.mitre.org/data/definitions/327.html",
+            "coverage": "direct",
+        } in weak_tls["standards"]
 
     def test_list_rules_json_respects_filters(self) -> None:
         result = runner.invoke(
@@ -185,6 +214,37 @@ def test_analyze_apache_cli_prints_findings_section(monkeypatch) -> None:
     assert "location: /tmp/extra.conf:3" in result.stdout
     assert "description: Apache config sets ServerTokens unsafely." in result.stdout
     assert "recommendation: Set ServerTokens Prod." in result.stdout
+
+
+def test_analyze_cli_can_group_text_by_standard(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="universal.weak_tls_protocol",
+                    title="Weak TLS/SSL protocols enabled",
+                    severity="medium",
+                    description="desc",
+                    recommendation="rec",
+                )
+            ],
+            issues=[],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    result = runner.invoke(
+        app,
+        ["analyze-nginx", "nginx.conf", "--group-by", "standard"],
+    )
+
+    assert result.exit_code == 0
+    assert "=== STANDARD CWE (1) ===" in result.stdout
+    assert "refs: CWE-327" in result.stdout
+    assert "=== STANDARD OWASP TOP 10 (1) ===" in result.stdout
 
 
 def test_analyze_nginx_cli_prints_issues_section(monkeypatch) -> None:

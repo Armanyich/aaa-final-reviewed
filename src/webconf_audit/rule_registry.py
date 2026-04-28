@@ -28,6 +28,8 @@ from webconf_audit.models import Severity
 
 RuleCategory = Literal["local", "external", "universal"]
 
+StandardCoverage = Literal["direct", "partial", "related"]
+
 InputKind = Literal[
     "ast",         # server-specific AST (Nginx / Apache / Lighttpd)
     "effective",   # AST + effective config (Lighttpd effective-aware rules)
@@ -36,6 +38,24 @@ InputKind = Literal[
     "normalized",  # NormalizedConfig (universal rules)
     "probe",       # ProbeAttempt list (external rules)
 ]
+
+
+@dataclass(frozen=True)
+class StandardReference:
+    """A standards reference attached to a rule.
+
+    ``coverage`` describes the strength of the mapping:
+
+    * ``direct`` -- the rule's signal directly satisfies or detects the item.
+    * ``partial`` -- the signal covers part of the item or a narrower scope.
+    * ``related`` -- useful context, but not a compliance claim.
+    """
+
+    standard: str
+    reference: str
+    url: str | None = None
+    coverage: StandardCoverage = "direct"
+    note: str | None = None
 
 # ---------------------------------------------------------------------------
 # RuleMeta -- immutable metadata for a single rule
@@ -60,6 +80,7 @@ class RuleMeta:
     server_type: str | None = None
     input_kind: InputKind = "ast"
     tags: tuple[str, ...] = ()
+    standards: tuple[StandardReference, ...] = ()
     condition: str | None = None
     order: int = 1000
 
@@ -272,6 +293,7 @@ def rule(
     server_type: str | None = None,
     input_kind: InputKind = "ast",
     tags: tuple[str, ...] = (),
+    standards: tuple[StandardReference, ...] = (),
     condition: str | None = None,
     order: int = 1000,
 ) -> Callable:
@@ -309,6 +331,7 @@ def rule(
             server_type=server_type,
             input_kind=input_kind,
             tags=tags,
+            standards=standards,
             condition=condition,
             order=order,
         )
@@ -326,6 +349,8 @@ __all__ = [
     "RuleEntry",
     "RuleMeta",
     "RuleRegistry",
+    "StandardCoverage",
+    "StandardReference",
     "registry",
     "rule",
 ]
