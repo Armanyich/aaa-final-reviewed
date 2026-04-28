@@ -121,6 +121,9 @@ Acceptance criteria:
 - JSON output is machine-readable enough for downstream dashboards.
 - Text output stays readable for humans and does not bury new findings.
 
+Status: implemented by baseline files, `--baseline`, `--write-baseline`,
+`--fail-on-new`, and diff-aware text/JSON report output.
+
 ## Stage 2 - Standards-Driven Rule Expansion
 
 Stage 2 starts only after Stage 1 is complete.
@@ -163,5 +166,5 @@ Acceptance criteria:
 
 ## Current Priority
 
-The next concrete task after merging milestone 2 is milestone 3: baseline/diff
-reporting.
+After merging Stage 1 milestone 3, move to Stage 2 preparation: generate the
+current rule inventory and start `docs/rule-coverage.md`.

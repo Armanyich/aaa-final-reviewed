@@ -9,6 +9,41 @@ command exits with:
 
 All `analyze-*` commands support `--format json` for machine-readable reports.
 
+## Baseline / Diff Mode
+
+Baseline mode lets a repository keep CI green with known existing findings while
+blocking newly introduced findings.
+
+Create the initial baseline from the current accepted state:
+
+```bash
+webconf-audit analyze-nginx nginx.conf --write-baseline webconf-audit-baseline.json
+```
+
+Commit the baseline file with the repository configuration you want to guard.
+
+Compare future runs against that baseline:
+
+```bash
+webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json
+```
+
+Use `--fail-on-new` to fail only when new findings meet the selected threshold:
+
+```bash
+webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json --fail-on-new medium --format json > webconf-audit.json
+```
+
+Diff-aware JSON reports include:
+
+- `new_findings`
+- `unchanged_findings`
+- `resolved_findings`
+- `suppressed_findings`
+
+`--baseline` accepts baseline files created by `--write-baseline` and JSON
+reports with a top-level `findings` array.
+
 ## Suppressions
 
 When `--fail-on` is used, `webconf-audit` reads `.webconf-audit-ignore.yml` from
@@ -61,7 +96,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
-      - run: webconf-audit analyze-nginx nginx.conf --fail-on medium --format json > webconf-audit.json
+      - run: webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json --fail-on-new medium --format json > webconf-audit.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -76,7 +111,7 @@ webconf-audit:
   image: python:3.12
   script:
     - python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
-    - webconf-audit analyze-nginx nginx.conf --fail-on medium --format json > webconf-audit.json
+    - webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json --fail-on-new medium --format json > webconf-audit.json
   artifacts:
     when: always
     paths:
@@ -98,7 +133,7 @@ steps:
       versionSpec: "3.12"
   - script: |
       python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
-      webconf-audit analyze-nginx nginx.conf --fail-on medium --format json > webconf-audit.json
+      webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json --fail-on-new medium --format json > webconf-audit.json
     displayName: Run webconf-audit
   - publish: webconf-audit.json
     artifact: webconf-audit-report

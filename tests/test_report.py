@@ -224,6 +224,38 @@ class TestTextFormatter:
         assert "Suppressed findings: 1" in out
         assert "Total: 0 findings, 0 issues, 1 suppressed" in out
 
+    def test_baseline_diff_summary_is_rendered(self) -> None:
+        report = ReportData(
+            results=[_result()],
+            baseline_diff={
+                "new_findings": [
+                    {
+                        "rule_id": "x.new",
+                        "title": "New finding",
+                        "severity": "medium",
+                        "target": "nginx.conf",
+                    }
+                ],
+                "unchanged_findings": [{"rule_id": "x.old"}],
+                "resolved_findings": [
+                    {
+                        "rule_id": "x.fixed",
+                        "title": "Fixed finding",
+                        "severity": "low",
+                        "target": "nginx.conf",
+                    }
+                ],
+                "suppressed_findings": [],
+            },
+        )
+
+        out = TextFormatter().format(report)
+
+        assert "Baseline diff:" in out
+        assert "new 1, unchanged 1, resolved 1, suppressed 0" in out
+        assert "[x.new] New finding (medium)" in out
+        assert "[x.fixed] Fixed finding (low)" in out
+
     def test_external_summary_renders_port_tls_headers_and_redirects(self) -> None:
         result = AnalysisResult(
             mode="external",
@@ -420,4 +452,25 @@ class TestJsonFormatter:
         assert parsed["summary"]["suppressed_findings"] == 1
         assert parsed["suppressed_findings"] == [
             {"rule_id": "nginx.weak_ssl_protocols", "fingerprint": "abc"}
+        ]
+
+    def test_json_includes_baseline_diff_arrays(self) -> None:
+        report = ReportData(
+            results=[_result()],
+            baseline_diff={
+                "new_findings": [{"rule_id": "x.new", "fingerprint": "1" * 64}],
+                "unchanged_findings": [{"rule_id": "x.same", "fingerprint": "2" * 64}],
+                "resolved_findings": [{"rule_id": "x.fixed", "fingerprint": "3" * 64}],
+                "suppressed_findings": [],
+            },
+        )
+
+        parsed = json.loads(JsonFormatter().format(report))
+
+        assert parsed["new_findings"] == [{"rule_id": "x.new", "fingerprint": "1" * 64}]
+        assert parsed["unchanged_findings"] == [
+            {"rule_id": "x.same", "fingerprint": "2" * 64}
+        ]
+        assert parsed["resolved_findings"] == [
+            {"rule_id": "x.fixed", "fingerprint": "3" * 64}
         ]
