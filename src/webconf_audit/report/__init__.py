@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-
 from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
 
 from webconf_audit.fingerprints import finding_fingerprint
 from webconf_audit.models import (
@@ -37,6 +37,16 @@ _ISSUE_LEVEL_ORDER: dict[str, int] = {
 }
 
 _ALL_SEVERITIES: list[Severity] = ["critical", "high", "medium", "low", "info"]
+
+
+class BaselineDiff(TypedDict, total=False):
+    """Diff groups produced by comparing a report with a baseline."""
+
+    baseline_path: str
+    new_findings: list[dict[str, object]]
+    unchanged_findings: list[dict[str, object]]
+    resolved_findings: list[dict[str, object]]
+    suppressed_findings: list[dict[str, object]]
 
 # ---------------------------------------------------------------------------
 # Deduplication: universal vs server-specific rule mapping
@@ -221,6 +231,7 @@ class ReportData(BaseModel):
     generated_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
     )
+    baseline_diff: BaselineDiff | None = None
 
     @property
     def all_findings_raw(self) -> list[Finding]:
@@ -326,6 +337,7 @@ class TextFormatter:
         deduplicated_results, _ = _deduplicated_findings_by_result(report.results)
         lines = _report_header_lines(report, summary)
         multi = len(report.results) > 1
+        lines.extend(_baseline_diff_section_lines(report.baseline_diff))
 
         for result, result_findings in deduplicated_results:
             lines.extend(_result_section_lines(result, result_findings, multi=multi))
@@ -384,6 +396,55 @@ def _report_summary_lines(
             " suppressed as duplicates of server-specific rules)"
         )
     lines.extend(["=" * 50, ""])
+    return lines
+
+
+def _baseline_diff_section_lines(baseline_diff: BaselineDiff | None) -> list[str]:
+    if baseline_diff is None:
+        return []
+
+    lines = [
+        "Baseline diff:",
+        (
+            "  "
+            f"new {len(_diff_entries(baseline_diff, 'new_findings'))}, "
+            f"unchanged {len(_diff_entries(baseline_diff, 'unchanged_findings'))}, "
+            f"resolved {len(_diff_entries(baseline_diff, 'resolved_findings'))}, "
+            f"suppressed {len(_diff_entries(baseline_diff, 'suppressed_findings'))}"
+        ),
+    ]
+    lines.extend(_diff_entry_lines("New findings", _diff_entries(baseline_diff, "new_findings")))
+    lines.extend(
+        _diff_entry_lines("Resolved findings", _diff_entries(baseline_diff, "resolved_findings"))
+    )
+    lines.append("")
+    return lines
+
+
+def _diff_entries(baseline_diff: BaselineDiff, key: str) -> list[dict[str, object]]:
+    entries = baseline_diff.get(key)
+    if not isinstance(entries, list):
+        return []
+    return [entry for entry in entries if isinstance(entry, dict)]
+
+
+def _diff_entry_lines(title: str, entries: list[dict[str, object]]) -> list[str]:
+    if not entries:
+        return []
+    lines = [f"  {title}:"]
+    for entry in entries:
+        rule_id = _summary_string(entry.get("rule_id"), default="unknown")
+        severity = _summary_string(entry.get("severity"), default="unknown")
+        entry_title = _summary_string(entry.get("title"), default="Untitled finding")
+        location = _summary_string(entry.get("location_display"))
+        if location is None and isinstance(entry.get("location"), str):
+            location = _summary_string(entry.get("location"))
+        target = _summary_string(entry.get("target"))
+        suffix = location or target
+        line = f"    - [{rule_id}] {entry_title} ({severity})"
+        if suffix:
+            line += f" at {suffix}"
+        lines.append(line)
     return lines
 
 
@@ -479,7 +540,9 @@ class JsonFormatter:
 
     def format(self, report: ReportData) -> str:
         summary = report.summary()
-        top_level_findings = _deduplicated_finding_pairs(report.results)
+        top_level_findings = deduplicated_finding_pairs(report.results)
+        baseline_diff = report.baseline_diff or {}
+        suppressed_payloads = _suppressed_payloads_for_report(report, baseline_diff)
         payload = {
             "generated_at": report.generated_at,
             "summary": summary.model_dump(),
@@ -488,23 +551,42 @@ class JsonFormatter:
                 for result in report.results
             ],
             "findings": [
-                _finding_payload(result, finding)
+                finding_payload(result, finding)
                 for result, finding in top_level_findings
             ],
-            "suppressed_findings": _suppressed_finding_payloads(report.results),
+            "new_findings": _diff_entries(baseline_diff, "new_findings"),
+            "resolved_findings": _diff_entries(baseline_diff, "resolved_findings"),
+            "unchanged_findings": _diff_entries(baseline_diff, "unchanged_findings"),
+            "suppressed_findings": suppressed_payloads,
             "issues": [i.model_dump() for i in report.all_issues],
         }
         return json.dumps(payload, indent=2, ensure_ascii=False)
 
 
-def _deduplicated_finding_pairs(results: list[AnalysisResult]) -> list[tuple[AnalysisResult, Finding]]:
+def _suppressed_payloads_for_report(
+    report: ReportData,
+    baseline_diff: BaselineDiff,
+) -> list[dict[str, object]]:
+    raw_payloads = _suppressed_finding_payloads(report.results)
+    if report.baseline_diff is None:
+        return raw_payloads
+    diff_payloads = _diff_entries(baseline_diff, "suppressed_findings")
+    return diff_payloads or raw_payloads
+
+
+def deduplicated_finding_pairs(results: list[AnalysisResult]) -> list[tuple[AnalysisResult, Finding]]:
     deduplicated_results, _ = _deduplicated_findings_by_result(results)
     pairs = [
         (result, finding)
         for result, result_findings in deduplicated_results
         for finding in result_findings
     ]
-    pairs.sort(key=lambda pair: _finding_sort_key(pair[1]))
+    pairs.sort(
+        key=lambda pair: (
+            _finding_sort_key(pair[1]),
+            finding_fingerprint(pair[0], pair[1]),
+        )
+    )
     return pairs
 
 
@@ -514,13 +596,13 @@ def _result_payload(result: AnalysisResult) -> dict[str, object]:
     ``payload["findings"]`` mirrors ``result.findings`` and is intentionally not
     deduplicated, so it may include universal findings that are suppressed in
     the aggregated top-level ``"findings"`` array (built via
-    ``_deduplicated_finding_pairs``). Consumers that want a stable, dedup'd
+    ``deduplicated_finding_pairs``). Consumers that want a stable, dedup'd
     view of findings should read the top-level array; the per-result list is
     kept verbatim so callers retain the full detector output for each target.
     """
     payload = result.model_dump()
     payload["findings"] = [
-        _finding_payload(result, finding)
+        finding_payload(result, finding)
         for finding in result.findings
     ]
     return payload
@@ -533,7 +615,7 @@ def _suppressed_finding_payloads(results: list[AnalysisResult]) -> list[dict[str
     return payloads
 
 
-def _finding_payload(result: AnalysisResult, finding: Finding) -> dict[str, object]:
+def finding_payload(result: AnalysisResult, finding: Finding) -> dict[str, object]:
     payload = finding.model_dump()
     payload["fingerprint"] = finding_fingerprint(result, finding)
     return payload
@@ -801,10 +883,13 @@ def _summary_string_list(value: object) -> list[str]:
 
 __all__ = [
     "JsonFormatter",
+    "BaselineDiff",
     "ReportData",
     "ReportSummary",
     "TextFormatter",
     "UNIVERSAL_TO_SPECIFIC_MAP",
+    "deduplicated_finding_pairs",
     "deduplicate_findings",
+    "finding_payload",
     "format_location",
 ]

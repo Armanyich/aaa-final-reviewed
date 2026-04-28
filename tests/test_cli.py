@@ -863,6 +863,193 @@ def test_without_fail_on_keeps_interactive_exit_zero(monkeypatch) -> None:
     assert result.exit_code == 0
 
 
+def test_write_baseline_creates_baseline_file(monkeypatch) -> None:
+    import json
+
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.server_tokens_on",
+                    title="Server tokens enabled",
+                    severity="low",
+                    description="desc",
+                    recommendation="rec",
+                    location=SourceLocation(
+                        mode="local",
+                        kind="file",
+                        file_path=config_path,
+                        line=2,
+                    ),
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    with runner.isolated_filesystem():
+        result = runner.invoke(
+            app,
+            ["analyze-nginx", "nginx.conf", "--write-baseline", "baseline.json"],
+        )
+        baseline = json.loads(Path("baseline.json").read_text(encoding="utf-8"))
+
+    assert result.exit_code == 0
+    assert baseline["version"] == 1
+    assert baseline["findings"][0]["rule_id"] == "nginx.server_tokens_on"
+    assert len(baseline["findings"][0]["fingerprint"]) == 64
+
+
+def test_fail_on_new_requires_baseline(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(mode="local", target=config_path, server_type="nginx")
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    result = runner.invoke(app, ["analyze-nginx", "nginx.conf", "--fail-on-new", "medium"])
+
+    assert result.exit_code == 1
+    assert "baseline_required" in result.stdout
+
+
+def test_fail_on_new_exits_2_for_new_findings_at_or_above_threshold(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.weak_ssl_protocols",
+                    title="Weak SSL protocols",
+                    severity="medium",
+                    description="desc",
+                    recommendation="rec",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    with runner.isolated_filesystem():
+        Path("baseline.json").write_text('{"findings": []}', encoding="utf-8")
+        result = runner.invoke(
+            app,
+            [
+                "analyze-nginx",
+                "nginx.conf",
+                "--baseline",
+                "baseline.json",
+                "--fail-on-new",
+                "medium",
+            ],
+        )
+
+    assert result.exit_code == 2
+    assert "Baseline diff:" in result.stdout
+    assert "new 1, unchanged 0, resolved 0, suppressed 0" in result.stdout
+
+
+def test_fail_on_new_allows_unchanged_findings(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.weak_ssl_protocols",
+                    title="Weak SSL protocols",
+                    severity="medium",
+                    description="desc",
+                    recommendation="rec",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    with runner.isolated_filesystem():
+        write_result = runner.invoke(
+            app,
+            ["analyze-nginx", "nginx.conf", "--write-baseline", "baseline.json"],
+        )
+        result = runner.invoke(
+            app,
+            [
+                "analyze-nginx",
+                "nginx.conf",
+                "--baseline",
+                "baseline.json",
+                "--fail-on-new",
+                "medium",
+            ],
+        )
+
+    assert write_result.exit_code == 0
+    assert result.exit_code == 0
+    assert "new 0, unchanged 1, resolved 0, suppressed 0" in result.stdout
+
+
+def test_fail_on_new_uses_default_suppression_file(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[
+                Finding(
+                    rule_id="nginx.weak_ssl_protocols",
+                    title="Weak SSL protocols",
+                    severity="medium",
+                    description="desc",
+                    recommendation="rec",
+                    location=SourceLocation(
+                        mode="local",
+                        kind="file",
+                        file_path="nginx.conf",
+                        line=7,
+                    ),
+                )
+            ],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    with runner.isolated_filesystem():
+        Path("baseline.json").write_text('{"findings": []}', encoding="utf-8")
+        Path(".webconf-audit-ignore.yml").write_text(
+            "\n".join(
+                [
+                    "suppressions:",
+                    "  - rule_id: nginx.weak_ssl_protocols",
+                    "    source: nginx.conf",
+                    "    line: 7",
+                    "    reason: accepted during migration",
+                    "    expires: 2099-01-01",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        result = runner.invoke(
+            app,
+            [
+                "analyze-nginx",
+                "nginx.conf",
+                "--baseline",
+                "baseline.json",
+                "--fail-on-new",
+                "medium",
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "new 0, unchanged 0, resolved 0, suppressed 1" in result.stdout
+
+
 # ---------------------------------------------------------------------------
 # --format json
 # ---------------------------------------------------------------------------

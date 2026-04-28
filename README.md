@@ -84,7 +84,7 @@ Exit codes in CI-gating mode:
   threshold.
 
 JSON findings include a stable `fingerprint` field that is designed for CI,
-future suppressions, and baseline/diff reporting.
+suppressions, and baseline/diff reporting.
 
 When `--fail-on` is used, `.webconf-audit-ignore.yml` is read from the current
 working directory if it exists. Suppressions require `rule_id`, either a
@@ -103,6 +103,29 @@ suppressions:
 
 Use `--suppressions <path>` to point at a non-default suppression file. Full CI
 examples are available in [docs/ci-integration.md](docs/ci-integration.md).
+
+### Baseline and diff mode
+
+Use `--write-baseline` to capture the current accepted finding set:
+
+```bash
+webconf-audit analyze-nginx nginx.conf --write-baseline webconf-audit-baseline.json
+```
+
+Use `--baseline` to compare a later run against that known state. Text output
+shows a short diff summary, and JSON output includes `new_findings`,
+`unchanged_findings`, `resolved_findings`, and `suppressed_findings`.
+
+```bash
+webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json
+```
+
+CI can block only new debt with `--fail-on-new` while leaving existing baseline
+findings unchanged:
+
+```bash
+webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json --fail-on-new medium
+```
 
 ## Local analysis pipeline
 
