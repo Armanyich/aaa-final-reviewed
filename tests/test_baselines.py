@@ -9,7 +9,7 @@ from webconf_audit.baselines import (
     load_baseline_file,
 )
 from webconf_audit.models import AnalysisResult, Finding, SourceLocation
-from webconf_audit.report import ReportData
+from webconf_audit.report import JsonFormatter, ReportData
 from webconf_audit.suppressions import SUPPRESSED_FINDINGS_METADATA_KEY
 
 
@@ -160,9 +160,11 @@ def test_apply_baseline_diff_compares_suppressed_fingerprints_case_insensitively
 
 
 def test_load_baseline_file_accepts_json_report_findings(tmp_path) -> None:
-    report_payload = baseline_from_report(ReportData(results=[_result([_finding("x.rule")])]))
+    report_payload = JsonFormatter().format(
+        ReportData(results=[_result([_finding("x.rule")])])
+    )
     report_path = tmp_path / "report.json"
-    report_path.write_text(json.dumps({"findings": report_payload["findings"]}), encoding="utf-8")
+    report_path.write_text(report_payload, encoding="utf-8")
 
     loaded = load_baseline_file(str(report_path))
 

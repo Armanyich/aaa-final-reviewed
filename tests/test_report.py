@@ -434,6 +434,17 @@ class TestJsonFormatter:
         assert parsed["findings"][0]["rule_id"] == "a.rule"
         assert parsed["findings"][1]["rule_id"] == "b.rule"
 
+    def test_json_top_level_findings_stable_for_equal_sort_keys(self) -> None:
+        r1 = _result(target="/a", findings=[_finding(rule_id="same.rule", severity="medium")])
+        r2 = _result(target="/b", findings=[_finding(rule_id="same.rule", severity="medium")])
+
+        first = json.loads(JsonFormatter().format(ReportData(results=[r1, r2])))
+        second = json.loads(JsonFormatter().format(ReportData(results=[r2, r1])))
+
+        assert [entry["fingerprint"] for entry in first["findings"]] == [
+            entry["fingerprint"] for entry in second["findings"]
+        ]
+
     def test_json_empty_report_has_empty_top_level_arrays(self) -> None:
         out = JsonFormatter().format(ReportData(results=[]))
         parsed = json.loads(out)
@@ -473,4 +484,39 @@ class TestJsonFormatter:
         ]
         assert parsed["resolved_findings"] == [
             {"rule_id": "x.fixed", "fingerprint": "3" * 64}
+        ]
+
+    def test_json_uses_baseline_diff_suppressed_findings_when_available(self) -> None:
+        r = _result()
+        r.metadata[SUPPRESSED_FINDINGS_METADATA_KEY] = [
+            {
+                "rule_id": "raw.suppressed",
+                "fingerprint": "a" * 64,
+                "finding": {"rule_id": "raw.suppressed"},
+            }
+        ]
+        report = ReportData(
+            results=[r],
+            baseline_diff={
+                "new_findings": [],
+                "unchanged_findings": [],
+                "resolved_findings": [],
+                "suppressed_findings": [
+                    {
+                        "rule_id": "diff.suppressed",
+                        "fingerprint": "b" * 64,
+                        "target": "nginx.conf",
+                    }
+                ],
+            },
+        )
+
+        parsed = json.loads(JsonFormatter().format(report))
+
+        assert parsed["suppressed_findings"] == [
+            {
+                "rule_id": "diff.suppressed",
+                "fingerprint": "b" * 64,
+                "target": "nginx.conf",
+            }
         ]
