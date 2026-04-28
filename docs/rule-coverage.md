@@ -500,77 +500,171 @@ Mapping rationale (iis rules):
 
 Count: 69
 
+Stage 2 step 3 mapping: **CWE / OWASP complete** for this group. The CIS
+column is empty across the whole group on purpose: external probes are
+black-box runtime checks that do not align with config-level CIS Benchmarks.
+Their natural standards companions are the OWASP Cheat Sheet Series and
+[OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
+verification requirements, which we will reference in the Stage 2 step 4
+gap-analysis PR rather than mid-table here. Info-only probes that describe
+expected, public-by-design endpoints (`robots.txt`, `sitemap.xml`,
+permissive 302 redirects, OPTIONS responses) leave both CWE and OWASP empty.
+
 | Rule ID | Severity | Input | Tags | CWE | OWASP | CIS / Vendor |
 | --- | --- | --- | --- | --- | --- | --- |
-| `external.nginx.version_disclosed_in_server_header` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.nginx.default_welcome_page` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.apache.version_disclosed_in_server_header` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.apache.mod_status_public` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.apache.etag_inode_disclosure` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.iis.aspnet_version_header_present` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.iis.detailed_error_page` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.lighttpd.version_in_server_header` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.lighttpd.mod_status_public` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cookie_missing_secure_on_https` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cookie_missing_httponly` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cookie_missing_samesite` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cookie_samesite_none_without_secure` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cors_wildcard_origin` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cors_wildcard_with_credentials` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.server_version_disclosed` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.x_powered_by_header_present` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.x_aspnet_version_header_present` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.x_frame_options_missing` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.x_frame_options_invalid` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.x_content_type_options_missing` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.x_content_type_options_invalid` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.content_security_policy_missing` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.content_security_policy_unsafe_inline` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.content_security_policy_unsafe_eval` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.referrer_policy_missing` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.referrer_policy_unsafe` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.permissions_policy_missing` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.coep_missing` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.coop_missing` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.corp_missing` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.https_not_available` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.http_not_redirected_to_https` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.hsts_header_missing` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.hsts_header_invalid` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.hsts_max_age_too_short` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.hsts_missing_include_subdomains` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.http_redirect_not_permanent` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.trace_method_allowed` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.allow_header_dangerous_methods` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.options_method_exposed` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.dangerous_http_methods_enabled` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.trace_method_exposed_via_options` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.webdav_methods_exposed` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.git_metadata_exposed` | high | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.server_status_exposed` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.server_info_exposed` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.nginx_status_exposed` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.env_file_exposed` | high | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.htaccess_exposed` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.htpasswd_exposed` | high | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.wordpress_admin_panel_exposed` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.phpinfo_exposed` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.elmah_axd_exposed` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.trace_axd_exposed` | high | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.web_config_exposed` | high | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.robots_txt_exposed` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.sitemap_xml_exposed` | info | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.svn_metadata_exposed` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.certificate_expired` | high | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.certificate_expires_soon` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.tls_certificate_self_signed` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.tls_1_0_supported` | high | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.tls_1_1_supported` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.tls_1_3_not_supported` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.weak_cipher_suite` | high | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cert_chain_incomplete` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cert_chain_length_unusual` | low | probe | - | _TBD_ | _TBD_ | _TBD_ |
-| `external.cert_san_mismatch` | medium | probe | - | _TBD_ | _TBD_ | _TBD_ |
+| `external.nginx.version_disclosed_in_server_header` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.nginx.default_welcome_page` | medium | probe | - | [CWE-1188](https://cwe.mitre.org/data/definitions/1188.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.apache.version_disclosed_in_server_header` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.apache.mod_status_public` | medium | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.apache.etag_inode_disclosure` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.iis.aspnet_version_header_present` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.iis.detailed_error_page` | medium | probe | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.lighttpd.version_in_server_header` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.lighttpd.mod_status_public` | medium | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.cookie_missing_secure_on_https` | low | probe | - | [CWE-614](https://cwe.mitre.org/data/definitions/614.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.cookie_missing_httponly` | low | probe | - | [CWE-1004](https://cwe.mitre.org/data/definitions/1004.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.cookie_missing_samesite` | low | probe | - | [CWE-1275](https://cwe.mitre.org/data/definitions/1275.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.cookie_samesite_none_without_secure` | low | probe | - | [CWE-614](https://cwe.mitre.org/data/definitions/614.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.cors_wildcard_origin` | low | probe | - | [CWE-942](https://cwe.mitre.org/data/definitions/942.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.cors_wildcard_with_credentials` | medium | probe | - | [CWE-942](https://cwe.mitre.org/data/definitions/942.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.server_version_disclosed` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.x_powered_by_header_present` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.x_aspnet_version_header_present` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.x_frame_options_missing` | low | probe | - | [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.x_frame_options_invalid` | low | probe | - | [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.x_content_type_options_missing` | low | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.x_content_type_options_invalid` | low | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.content_security_policy_missing` | medium | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.content_security_policy_unsafe_inline` | medium | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.content_security_policy_unsafe_eval` | medium | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.referrer_policy_missing` | info | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.referrer_policy_unsafe` | low | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.permissions_policy_missing` | info | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.coep_missing` | info | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.coop_missing` | info | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.corp_missing` | info | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.https_not_available` | medium | probe | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.http_not_redirected_to_https` | low | probe | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.hsts_header_missing` | low | probe | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.hsts_header_invalid` | medium | probe | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.hsts_max_age_too_short` | low | probe | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.hsts_missing_include_subdomains` | info | probe | - | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.http_redirect_not_permanent` | info | probe | - | - | - | - |
+| `external.trace_method_allowed` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.allow_header_dangerous_methods` | medium | probe | - | [CWE-650](https://cwe.mitre.org/data/definitions/650.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.options_method_exposed` | info | probe | - | - | - | - |
+| `external.dangerous_http_methods_enabled` | medium | probe | - | [CWE-650](https://cwe.mitre.org/data/definitions/650.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.trace_method_exposed_via_options` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.webdav_methods_exposed` | medium | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.git_metadata_exposed` | high | probe | - | [CWE-540](https://cwe.mitre.org/data/definitions/540.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.server_status_exposed` | medium | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.server_info_exposed` | medium | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.nginx_status_exposed` | low | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.env_file_exposed` | high | probe | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.htaccess_exposed` | medium | probe | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.htpasswd_exposed` | high | probe | - | [CWE-522](https://cwe.mitre.org/data/definitions/522.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - |
+| `external.wordpress_admin_panel_exposed` | low | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.phpinfo_exposed` | medium | probe | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.elmah_axd_exposed` | medium | probe | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.trace_axd_exposed` | high | probe | - | [CWE-215](https://cwe.mitre.org/data/definitions/215.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.web_config_exposed` | high | probe | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.robots_txt_exposed` | info | probe | - | - | - | - |
+| `external.sitemap_xml_exposed` | info | probe | - | - | - | - |
+| `external.svn_metadata_exposed` | medium | probe | - | [CWE-540](https://cwe.mitre.org/data/definitions/540.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.certificate_expired` | high | probe | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.certificate_expires_soon` | medium | probe | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.tls_certificate_self_signed` | medium | probe | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.tls_1_0_supported` | high | probe | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.tls_1_1_supported` | medium | probe | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.tls_1_3_not_supported` | low | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.weak_cipher_suite` | high | probe | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.cert_chain_incomplete` | medium | probe | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `external.cert_chain_length_unusual` | low | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `external.cert_san_mismatch` | medium | probe | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+
+Mapping rationale (external probes), grouped by pattern:
+
+- **Server fingerprinting** -- the per-server `*.version_disclosed_in_server_header`
+  family (`external.nginx.*`, `external.apache.*`, `external.iis.*`,
+  `external.lighttpd.*`), plus `external.server_version_disclosed`,
+  `external.x_powered_by_header_present`,
+  `external.x_aspnet_version_header_present`,
+  `external.iis.aspnet_version_header_present`,
+  `external.apache.etag_inode_disclosure`,
+  `external.phpinfo_exposed`, `external.nginx_status_exposed`,
+  `external.apache.mod_status_public`, `external.lighttpd.mod_status_public`,
+  `external.server_info_exposed`, `external.server_status_exposed`,
+  `external.trace_method_allowed`, `external.trace_method_exposed_via_options`
+  -- all leak server / runtime / module information to unauthenticated
+  clients: CWE-200, OWASP A05.
+- `external.nginx.default_welcome_page` -- the unconfigured-default page
+  proves the server still runs in a stock state: CWE-1188 (insecure default
+  initialization of resource), OWASP A05.
+- `external.iis.detailed_error_page`, `external.elmah_axd_exposed` -- public
+  detailed error pages or error logs expose stack traces and SQL fragments:
+  CWE-209 (information exposure through an error message), OWASP A05.
+- `external.trace_axd_exposed` -- ASP.NET `trace.axd` exposes per-request
+  payloads and developer-only data: CWE-215 (insertion of sensitive
+  information into debugging code), OWASP A05.
+- **Cookie hardening** (`cookie_missing_secure_on_https`,
+  `cookie_samesite_none_without_secure`) -- direct match for CWE-614
+  (sensitive cookie in HTTPS session without Secure attribute);
+  (`cookie_missing_httponly`) -- CWE-1004; (`cookie_missing_samesite`) --
+  CWE-1275. All under OWASP A05 (hardening misconfiguration). Cookie
+  hardening also lives in OWASP A07 conceptually, but A05 is the more
+  honest fit because the rules check transport configuration rather than
+  authentication failure.
+- **CORS** (`cors_wildcard_origin`, `cors_wildcard_with_credentials`) --
+  CWE-942 (permissive cross-domain policy with untrusted domains),
+  OWASP A05.
+- **Hardening response headers**
+  (`x_frame_options_missing`, `x_frame_options_invalid`) -- CWE-1021
+  (clickjacking protection failure);
+  (`x_content_type_options_missing/invalid`,
+  `content_security_policy_missing`,
+  `content_security_policy_unsafe_inline`,
+  `content_security_policy_unsafe_eval`,
+  `coep_missing`, `coop_missing`, `corp_missing`) -- CWE-693 (protection
+  mechanism failure) because the protection control is absent or
+  weakened. OWASP A05.
+- `referrer_policy_*`, `permissions_policy_missing` -- as in the universal
+  table, no clean CWE for "policy not set / unsafe"; we keep OWASP A05.
+- **HTTPS / HSTS** (`https_not_available`, `http_not_redirected_to_https`,
+  `hsts_header_missing`, `hsts_header_invalid`, `hsts_max_age_too_short`,
+  `hsts_missing_include_subdomains`) -- without HTTPS or proper HSTS the
+  channel is downgradeable to plaintext: CWE-319. The two transport
+  rules (`https_not_available`, `http_not_redirected_to_https`) sit under
+  A02 (cryptographic failures); the HSTS-policy rules are hardening
+  misconfigurations under A05.
+- `http_redirect_not_permanent` -- cosmetic / SEO-style finding (302
+  instead of 301); no security weakness.
+- **HTTP method exposure** (`allow_header_dangerous_methods`,
+  `dangerous_http_methods_enabled`) -- CWE-650 (trusting HTTP permission
+  methods on the server side), OWASP A05;
+  (`webdav_methods_exposed`) -- attack-surface increase rather than a
+  weakness class, CWE empty, OWASP A05;
+  (`options_method_exposed`) -- info-level observation, no
+  CWE/OWASP.
+- **Sensitive paths** (`git_metadata_exposed`, `svn_metadata_exposed`) --
+  CWE-540 (inclusion of sensitive information in source code);
+  (`env_file_exposed`, `htaccess_exposed`, `web_config_exposed`) -- CWE-538
+  (file/directory information exposure);
+  (`htpasswd_exposed`) -- CWE-522 (insufficiently protected credentials),
+  OWASP A07. `wordpress_admin_panel_exposed` is operational guidance, not
+  a weakness class -- CWE empty, OWASP A05. `robots_txt_exposed` and
+  `sitemap_xml_exposed` are public-by-design and stay empty for both CWE
+  and OWASP.
+- **TLS protocols / ciphers** (`tls_1_0_supported`, `tls_1_1_supported`,
+  `weak_cipher_suite`) -- CWE-327, OWASP A02. (`tls_1_3_not_supported`,
+  `cert_chain_length_unusual`) -- operational gaps, not weakness classes;
+  CWE empty, OWASP A05.
+- **Certificate validity** (`certificate_expired`,
+  `certificate_expires_soon`, `tls_certificate_self_signed`,
+  `cert_chain_incomplete`, `cert_san_mismatch`) -- a public-facing server
+  whose certificate cannot be validated by mainstream clients pushes those
+  clients into either accepting an unsafe channel or refusing to connect:
+  CWE-295 (improper certificate validation, used as the umbrella class for
+  the server-side configuration error), OWASP A02.
 
 ## Standards mapping plan
 
@@ -589,7 +683,11 @@ Progress:
 - [x] Apache local rules (27) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [x] Lighttpd local rules (15)
 - [x] IIS local rules (20) — CWE/OWASP filled; CIS pending Stage 2 step 4
-- [ ] External (probe) rules (69)
+- [x] External (probe) rules (69) — CWE/OWASP filled; CIS not applicable (probes)
+
+Stage 2 step 3 complete for CWE / OWASP. CIS section numbers and OWASP ASVS
+references are deferred to Stage 2 step 4 (gap analysis), where each
+benchmark is walked end-to-end so references match the published versions.
 
 Each follow-up PR fills one server family at a time and only writes a CWE,
 OWASP, or CIS reference when it is verifiable. Cells without an honest match
