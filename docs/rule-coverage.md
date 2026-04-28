@@ -233,35 +233,108 @@ Mapping rationale (nginx rules):
 
 Count: 27
 
+Stage 2 step 3 mapping: **CWE / OWASP complete** for this group. As with
+nginx, the CIS column stays empty even though a *CIS Apache HTTP Server
+Benchmark* exists at
+[cisecurity.org](https://www.cisecurity.org/benchmark/apache_http_server) —
+specific section numbers will land with the Stage 2 step 4 gap-analysis PR.
+Rules that are best-practice / organisational (e.g. demanding explicit
+`AllowOverride`, requiring `ErrorDocument`) leave CWE empty when no clean
+weakness class fits, and `htaccess_*` rules are typed to the override-driven
+weakness they create rather than to ".htaccess" itself.
+
 | Rule ID | Severity | Input | Tags | CWE | OWASP | CIS / Vendor |
 | --- | --- | --- | --- | --- | --- | --- |
-| `apache.allowoverride_all_in_directory` | medium | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.backup_temp_files_not_restricted` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.custom_log_missing` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.directory_without_allowoverride` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.error_document_404_missing` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.error_document_500_missing` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.error_log_missing` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.htaccess_auth_without_require` | medium | htaccess | htaccess | _TBD_ | _TBD_ | _TBD_ |
-| `apache.htaccess_disables_security_headers` | medium | htaccess | htaccess, headers | _TBD_ | _TBD_ | _TBD_ |
-| `apache.htaccess_enables_cgi` | medium | htaccess | htaccess | _TBD_ | _TBD_ | _TBD_ |
-| `apache.htaccess_enables_directory_listing` | medium | htaccess | htaccess | _TBD_ | _TBD_ | _TBD_ |
-| `apache.htaccess_contains_security_directive` | medium | htaccess | htaccess | _TBD_ | _TBD_ | _TBD_ |
-| `apache.htaccess_rewrite_without_limit` | low | htaccess | htaccess | _TBD_ | _TBD_ | _TBD_ |
-| `apache.htaccess_weakens_security` | high | mixed | htaccess | _TBD_ | _TBD_ | _TBD_ |
-| `apache.index_options_fancyindexing_enabled` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.index_options_scanhtmltitles_enabled` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.limit_request_body_missing_or_invalid` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.limit_request_fields_missing_or_invalid` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.options_execcgi_enabled` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.options_includes_enabled` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.options_indexes` | medium | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.options_multiviews_enabled` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `apache.server_info_exposed` | low | ast | disclosure | _TBD_ | _TBD_ | _TBD_ |
-| `apache.server_signature_not_off` | low | ast | disclosure | _TBD_ | _TBD_ | _TBD_ |
-| `apache.server_status_exposed` | low | ast | disclosure | _TBD_ | _TBD_ | _TBD_ |
-| `apache.server_tokens_not_prod` | low | ast | disclosure | _TBD_ | _TBD_ | _TBD_ |
-| `apache.trace_enable_not_off` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
+| `apache.allowoverride_all_in_directory` | medium | ast | - | [CWE-732](https://cwe.mitre.org/data/definitions/732.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.backup_temp_files_not_restricted` | low | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.custom_log_missing` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - |
+| `apache.directory_without_allowoverride` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.error_document_404_missing` | low | ast | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.error_document_500_missing` | low | ast | - | [CWE-209](https://cwe.mitre.org/data/definitions/209.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.error_log_missing` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - |
+| `apache.htaccess_auth_without_require` | medium | htaccess | htaccess | [CWE-287](https://cwe.mitre.org/data/definitions/287.html) | [A07:2021](https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/) | - |
+| `apache.htaccess_disables_security_headers` | medium | htaccess | htaccess, headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.htaccess_enables_cgi` | medium | htaccess | htaccess | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.htaccess_enables_directory_listing` | medium | htaccess | htaccess | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.htaccess_contains_security_directive` | medium | htaccess | htaccess | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.htaccess_rewrite_without_limit` | low | htaccess | htaccess | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.htaccess_weakens_security` | high | mixed | htaccess | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.index_options_fancyindexing_enabled` | low | ast | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.index_options_scanhtmltitles_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.limit_request_body_missing_or_invalid` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `apache.limit_request_fields_missing_or_invalid` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `apache.options_execcgi_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.options_includes_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.options_indexes` | medium | ast | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.options_multiviews_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.server_info_exposed` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.server_signature_not_off` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.server_status_exposed` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.server_tokens_not_prod` | low | ast | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `apache.trace_enable_not_off` | low | ast | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+
+Mapping rationale (apache rules):
+
+- `allowoverride_all_in_directory` -- `AllowOverride All` lets any `.htaccess`
+  file under the directory grant or weaken authorization, mod_rewrite, or
+  options: CWE-732 (incorrect permission assignment for critical resource),
+  OWASP A05.
+- `backup_temp_files_not_restricted` -- no `<FilesMatch>` block denying
+  `*.bak`, `*.swp`, `*.tmp` lets editors' temp files be served as static
+  content: CWE-538 (file/directory information exposure), OWASP A05.
+- `custom_log_missing`, `error_log_missing` -- absence of `CustomLog` /
+  `ErrorLog` defeats incident response: CWE-778 (insufficient logging),
+  OWASP A09.
+- `directory_without_allowoverride` -- a `<Directory>` block without an
+  explicit `AllowOverride` makes the override behaviour depend on
+  inherited / default settings, which is a maintainability and review hazard
+  rather than a weakness class. CWE empty, OWASP A05 (best-practice
+  misconfig).
+- `error_document_404_missing`, `error_document_500_missing` -- without a
+  custom `ErrorDocument`, Apache renders the default page that may include
+  build / module details: CWE-209 (information exposure through an error
+  message), OWASP A05.
+- `htaccess_auth_without_require` -- declaring `AuthType` / `AuthName`
+  without a matching `Require` leaves the realm effectively open: CWE-287
+  (improper authentication), OWASP A07.
+- `htaccess_disables_security_headers` -- `Header unset` against security
+  response headers turns the protection off: CWE-693 (protection mechanism
+  failure), OWASP A05.
+- `htaccess_enables_cgi`, `options_execcgi_enabled`, `options_includes_enabled`
+  -- enabling CGI / SSI from `.htaccess` or `Options` is an attack-surface
+  increase, not a textbook weakness class. CWE empty, OWASP A05.
+- `htaccess_enables_directory_listing`, `index_options_fancyindexing_enabled`,
+  `options_indexes` -- direct match for CWE-548 (directory listing); OWASP
+  A05.
+- `htaccess_contains_security_directive` -- moving security directives into
+  `.htaccess` instead of the main config is a governance / review issue, not
+  a weakness class. CWE empty, OWASP A05.
+- `htaccess_rewrite_without_limit` -- `RewriteRule` without a guarding
+  `RewriteCond` is a heuristic for rewrite logic that may run more broadly
+  than intended; we keep CWE empty because the practical risk is
+  case-by-case, OWASP A05 (best-practice misconfig).
+- `htaccess_weakens_security` -- `.htaccess` re-enables `ServerSignature`
+  after the main config disabled it: CWE-200 (information exposure),
+  OWASP A05.
+- `index_options_scanhtmltitles_enabled` -- enables Apache to scan HTML
+  files for titles when rendering a directory listing; only matters once
+  listing is already on, so we keep CWE empty and tag OWASP A05.
+- `limit_request_body_missing_or_invalid`, `limit_request_fields_missing_or_invalid`
+  -- absence of `LimitRequestBody` / `LimitRequestFields` lets clients send
+  arbitrarily large bodies or header lists: CWE-770 (allocation of resources
+  without limits or throttling). OWASP empty (no clean DoS-hardening home in
+  the 2021 Top 10).
+- `options_multiviews_enabled` -- content negotiation can expose unintended
+  files (e.g. backup variants), but this is about default behaviour rather
+  than a single weakness; CWE empty, OWASP A05.
+- `server_info_exposed`, `server_status_exposed`,
+  `server_signature_not_off`, `server_tokens_not_prod` -- all leak server
+  build / module / runtime information: CWE-200 (information exposure),
+  OWASP A05.
+- `trace_enable_not_off` -- `TraceEnable On` keeps the HTTP `TRACE` method
+  available, the classic vector for cross-site tracing (XST) which lets an
+  attacker echo back `Authorization` / `Cookie` headers: CWE-200 (information
+  exposure), OWASP A05.
 
 ### Lighttpd (Local)
 
@@ -453,7 +526,7 @@ Progress:
 
 - [x] Universal rules (11)
 - [x] Nginx local rules (41) — CWE/OWASP filled; CIS pending Stage 2 step 4
-- [ ] Apache local rules (27)
+- [x] Apache local rules (27) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [x] Lighttpd local rules (15)
 - [ ] IIS local rules (20)
 - [ ] External (probe) rules (69)
