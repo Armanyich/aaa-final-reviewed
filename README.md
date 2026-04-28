@@ -199,12 +199,18 @@ The rule catalog is browsable through the CLI:
 webconf-audit list-rules
 webconf-audit list-rules --category local --server-type nginx
 webconf-audit list-rules --severity high --tag tls
+webconf-audit list-rules --format json
 ```
 
 Filters: `--category` (`local`, `external`, `universal`),
 `--server-type` (`nginx`, `apache`, `lighttpd`, `iis`),
 `--severity` (`critical`, `high`, `medium`, `low`, `info`),
 `--tag`.
+
+Use `--format json` to get a machine-readable inventory with the full
+`RuleMeta` payload (rule_id, severity, category, server_type,
+input_kind, tags, order, etc.). The full inventory and the standards
+mapping plan live in [docs/rule-coverage.md](docs/rule-coverage.md).
 
 The catalog currently contains 183 rules:
 
