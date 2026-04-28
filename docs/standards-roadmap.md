@@ -137,6 +137,18 @@ change rule metadata such as severity, tags, descriptions, conditions, or
 recommendations. Planning artifacts such as gap tables, checklists, source
 links, and ordering notes are allowed.
 
+Inside `docs/rule-coverage.md` the same documentation-only fence applies:
+in a planning PR only **candidate / tentative** standards entries are
+allowed in the gap tables, and they must be visibly marked as such; final
+section identifiers and verified CIS mappings are reserved for the
+follow-up CIS-mapping PRs. As a concrete shape, a candidate entry should
+look like a row that flags itself, for example
+`| ... | _candidate: CIS NGINX Benchmark §X.Y_ | _planning_ |` rather
+than a clean `[CIS NGINX 2.5.1]` link. Anything that would imply a
+finalized mapping — such as adding a verified `[CIS ...]` link in the
+existing rule rows of `docs/rule-coverage.md` — must be deferred to the
+follow-up PR for that server family.
+
 Planning output for CIS NGINX Benchmark 3.0.0:
 
 - confirm the benchmark version and source link used for the walk;
@@ -182,8 +194,15 @@ the expected artifact for each family:
 | IIS / Windows mapping | IIS XML, Windows/SChannel, Microsoft docs, and legacy-CIS source split | No new rules |
 
 `No new rules` means no adding or removing rule IDs and no changes to rule
-behavior or signal detection. Updating standards references for existing rules
-and filling standards gap tables is allowed.
+behavior or signal detection. Updating standards references for existing
+rules and filling standards gap tables is allowed **only inside
+documentation** — that is, in `docs/rule-coverage.md`, this file
+(`docs/standards-roadmap.md`), and any planning gap tables. The same
+follow-up PRs must not modify the rule registry, rule metadata
+(severity, tags, descriptions, conditions, recommendations), or any code
+that affects rule behavior or signal detection. Code-level changes for
+new rules belong to the rule-implementation PRs that follow this
+mapping work, not to the mapping PRs themselves.
 
 ## ASVS 5.0.0 First Pass
 
