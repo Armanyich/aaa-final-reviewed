@@ -45,27 +45,62 @@ Columns:
 - **Severity** -- default severity assigned to findings produced by the rule.
 - **Input** -- RuleMeta.input_kind (data the runner consumes).
 - **Tags** -- registry tags used for filtering (`webconf-audit list-rules --tag ...`).
-- **CWE / OWASP / CIS** -- standards mapping. These are intentionally empty
-  during Stage 2 preparation; they will be filled in step 3 of Stage 2 only
-  when the mapping for a given rule is honest and verifiable.
+- **CWE / OWASP / CIS** -- standards mapping. Filled per server family as
+  Stage 2 step 3 progresses. A cell stays empty (`-`) when no honest mapping
+  exists; CIS for universal rules delegates to the per-server tables because
+  CIS benchmarks are vendor-specific.
 
 ### Universal Rules
 
 Count: 11
 
+Stage 2 step 3 mapping: **complete** for this group. CIS / vendor cells say
+`_see vendor sections_` because each universal rule reduces to a
+server-specific configuration check (Apache, Nginx, Lighttpd, or IIS) and the
+matching CIS benchmark item lives in the corresponding server-family table.
+
 | Rule ID | Severity | Input | Tags | CWE | OWASP | CIS / Vendor |
 | --- | --- | --- | --- | --- | --- | --- |
-| `universal.tls_intent_without_config` | high | normalized | tls | _TBD_ | _TBD_ | _TBD_ |
-| `universal.weak_tls_protocol` | medium | normalized | tls | _TBD_ | _TBD_ | _TBD_ |
-| `universal.weak_tls_ciphers` | medium | normalized | tls | _TBD_ | _TBD_ | _TBD_ |
-| `universal.missing_hsts` | medium | normalized | headers, tls | _TBD_ | _TBD_ | _TBD_ |
-| `universal.missing_x_content_type_options` | low | normalized | headers | _TBD_ | _TBD_ | _TBD_ |
-| `universal.missing_x_frame_options` | low | normalized | headers | _TBD_ | _TBD_ | _TBD_ |
-| `universal.missing_content_security_policy` | low | normalized | headers | _TBD_ | _TBD_ | _TBD_ |
-| `universal.missing_referrer_policy` | low | normalized | headers | _TBD_ | _TBD_ | _TBD_ |
-| `universal.directory_listing_enabled` | medium | normalized | access | _TBD_ | _TBD_ | _TBD_ |
-| `universal.server_identification_disclosed` | low | normalized | disclosure | _TBD_ | _TBD_ | _TBD_ |
-| `universal.listen_on_all_interfaces` | info | normalized | network | _TBD_ | _TBD_ | _TBD_ |
+| `universal.tls_intent_without_config` | high | normalized | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | _see vendor sections_ |
+| `universal.weak_tls_protocol` | medium | normalized | tls | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | _see vendor sections_ |
+| `universal.weak_tls_ciphers` | medium | normalized | tls | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | _see vendor sections_ |
+| `universal.missing_hsts` | medium | normalized | headers, tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | _see vendor sections_ |
+| `universal.missing_x_content_type_options` | low | normalized | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | _see vendor sections_ |
+| `universal.missing_x_frame_options` | low | normalized | headers | [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | _see vendor sections_ |
+| `universal.missing_content_security_policy` | low | normalized | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | _see vendor sections_ |
+| `universal.missing_referrer_policy` | low | normalized | headers | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | _see vendor sections_ |
+| `universal.directory_listing_enabled` | medium | normalized | access | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | _see vendor sections_ |
+| `universal.server_identification_disclosed` | low | normalized | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | _see vendor sections_ |
+| `universal.listen_on_all_interfaces` | info | normalized | network | - | - | _see vendor sections_ |
+
+Mapping rationale (universal rules):
+
+- `tls_intent_without_config` -- a listener advertises HTTPS but no TLS is
+  configured, so traffic would travel in cleartext: CWE-319, OWASP A02
+  (cryptographic failures).
+- `weak_tls_protocol`, `weak_tls_ciphers` -- enabling SSLv2/SSLv3/TLSv1.0/1.1
+  or RC4/DES/3DES/MD5 cipher suites is the textbook case of CWE-327
+  (broken / risky cryptographic algorithm), which OWASP groups under A02.
+- `missing_hsts` -- without HSTS a site can be downgraded to plain HTTP and
+  expose credentials in cleartext (CWE-319). Practitioners normally treat the
+  missing header itself as a misconfiguration (A05) rather than a primary
+  crypto failure.
+- `missing_x_content_type_options`, `missing_content_security_policy` -- both
+  are protective response headers; their absence is best modelled as a
+  generic protection-mechanism failure (CWE-693). OWASP A05 covers the
+  hardening-headers category.
+- `missing_x_frame_options` -- direct match for CWE-1021 (improper
+  restriction of rendered UI layers / clickjacking).
+- `missing_referrer_policy` -- the referrer header has nuanced semantics and
+  no single CWE maps cleanly to "policy not set"; we leave CWE empty and keep
+  OWASP A05 because the rule is a hardening-config check.
+- `directory_listing_enabled` -- direct match for CWE-548 (exposure of
+  information through directory listing). Categorised as A05 (misconfig)
+  because the rule fires only when the operator explicitly enables listing.
+- `server_identification_disclosed` -- CWE-200 (information exposure) is the
+  honest weakness class; OWASP A05 covers it as a hardening item.
+- `listen_on_all_interfaces` -- info-only finding describing a deployment
+  hint, not a vulnerability. Both CWE and OWASP cells stay empty by design.
 
 ### Nginx (Local)
 
@@ -284,6 +319,32 @@ only where the mapping is honest:
 - **CIS / vendor hardening** for rules that mirror configuration-specific
   guidance from CIS benchmarks or vendor hardening guides.
 
-The inventory above is populated; the standards columns will be filled in
-subsequent PRs, one server family at a time, with explicit references in the
-commit message or PR description.
+Progress:
+
+- [x] Universal rules (11)
+- [ ] Nginx local rules (41)
+- [ ] Apache local rules (27)
+- [ ] Lighttpd local rules (15)
+- [ ] IIS local rules (20)
+- [ ] External (probe) rules (69)
+
+Each follow-up PR fills one server family at a time and only writes a CWE,
+OWASP, or CIS reference when it is verifiable. Cells without an honest match
+stay as `-`.
+
+### Mapping conventions
+
+- **CWE links** point at the canonical entry on
+  [cwe.mitre.org](https://cwe.mitre.org/data/definitions/).
+- **OWASP** uses the 2021 Top 10 categories
+  ([A01](https://owasp.org/Top10/A01_2021-Broken_Access_Control/),
+  [A02](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/),
+  [A05](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/),
+  ...). When a more specific Cheat Sheet or ASVS section applies it is
+  noted alongside the Top 10 cell.
+- **CIS / vendor hardening** points at a specific section of a CIS Benchmark
+  (e.g. *CIS Apache HTTP Server 2.4 Benchmark* §7.6) or an official vendor
+  hardening guide. Universal rules delegate to the per-server tables because
+  the same conceptual check has different section numbers in each benchmark.
+- Cells stay empty (`-`) when no honest match exists; we prefer an empty cell
+  to a stretched mapping.

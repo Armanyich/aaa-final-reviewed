@@ -166,9 +166,8 @@ Acceptance criteria:
 
 ## Current Priority
 
-Stage 2 preparation is in progress. The rule inventory is exposed by
-`webconf-audit list-rules --format json` (full `RuleMeta` payload) and
-`docs/rule-coverage.md` collects the inventory together with the
-standards-mapping plan. Next step: start filling the CWE/OWASP/CIS columns
-of `docs/rule-coverage.md` one server family at a time, only where the
-mapping is honest.
+Stage 2 step 3 (standards mapping) is in progress. The inventory is exposed
+by `webconf-audit list-rules --format json` and `docs/rule-coverage.md`
+holds the standards mapping. Universal rules (11) are mapped; remaining
+groups are filled one server family per PR, only where the mapping is
+honest. Next group: Nginx local rules.
