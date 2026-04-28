@@ -542,11 +542,7 @@ class JsonFormatter:
         summary = report.summary()
         top_level_findings = deduplicated_finding_pairs(report.results)
         baseline_diff = report.baseline_diff or {}
-        suppressed_payloads = (
-            _diff_entries(baseline_diff, "suppressed_findings")
-            if report.baseline_diff is not None
-            else _suppressed_finding_payloads(report.results)
-        )
+        suppressed_payloads = _suppressed_payloads_for_report(report, baseline_diff)
         payload = {
             "generated_at": report.generated_at,
             "summary": summary.model_dump(),
@@ -565,6 +561,17 @@ class JsonFormatter:
             "issues": [i.model_dump() for i in report.all_issues],
         }
         return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+def _suppressed_payloads_for_report(
+    report: ReportData,
+    baseline_diff: BaselineDiff,
+) -> list[dict[str, object]]:
+    raw_payloads = _suppressed_finding_payloads(report.results)
+    if report.baseline_diff is None:
+        return raw_payloads
+    diff_payloads = _diff_entries(baseline_diff, "suppressed_findings")
+    return diff_payloads or raw_payloads
 
 
 def deduplicated_finding_pairs(results: list[AnalysisResult]) -> list[tuple[AnalysisResult, Finding]]:

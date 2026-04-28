@@ -495,6 +495,26 @@ class TestJsonFormatter:
                 "finding": {"rule_id": "raw.suppressed"},
             }
         ]
+
+    def test_json_falls_back_to_raw_suppressed_when_baseline_diff_is_incomplete(self) -> None:
+        r = _result()
+        r.metadata[SUPPRESSED_FINDINGS_METADATA_KEY] = [
+            {"rule_id": "raw.suppressed", "fingerprint": "a" * 64}
+        ]
+        report = ReportData(
+            results=[r],
+            baseline_diff={
+                "new_findings": [],
+                "unchanged_findings": [],
+                "resolved_findings": [],
+            },
+        )
+
+        parsed = json.loads(JsonFormatter().format(report))
+
+        assert parsed["suppressed_findings"] == [
+            {"rule_id": "raw.suppressed", "fingerprint": "a" * 64}
+        ]
         report = ReportData(
             results=[r],
             baseline_diff={
