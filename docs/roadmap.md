@@ -172,6 +172,7 @@ ASVS 5.0.0, CIS NGINX Benchmark 3.0.0, CIS Apache HTTP Server 2.4 Benchmark
 2.3.0, IIS / Windows Server hardening sources, and future standards-aware
 reporting.
 
-Next step: walk one standard family at a time, starting with ASVS references
-for already-covered runtime and header rules, then CIS Nginx, then CIS Apache,
-then IIS / Windows Server source-of-truth decisions.
+Next step: execute the Work Order in `docs/standards-roadmap.md` by walking
+one standard family at a time, starting with ASVS references for
+already-covered runtime and header rules, then CIS Nginx, then CIS Apache, then
+IIS / Windows Server source-of-truth decisions.

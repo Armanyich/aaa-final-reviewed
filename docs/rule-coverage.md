@@ -687,14 +687,16 @@ Progress:
 - [x] IIS local rules (20) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [x] External (probe) rules (69) — CWE/OWASP filled; CIS not applicable (probes)
 
-Stage 2 step 3 is complete for CWE / OWASP. Candidate CIS section numbers and
-OWASP ASVS references are planned in `docs/standards-roadmap.md`. This file
-becomes the canonical rule-level store only after those references are reviewed
-and copied into the inventory tables.
+Stage 2 step 3 is complete for CWE / OWASP Top 10. This file is already the
+canonical rule-level store for those completed mappings. Candidate CIS section
+numbers and OWASP ASVS references stay in `docs/standards-roadmap.md` until
+each standards family is reviewed. After review, CIS references are copied into
+the existing `CIS / Vendor` column, and ASVS references are copied into a
+dedicated `ASVS` column added by the ASVS mapping PR.
 
-Each follow-up PR fills one server family at a time and only writes a CWE,
-OWASP, or CIS reference when it is verifiable. Cells without an honest match
-stay as `-`.
+Each follow-up PR fills one standards family at a time and only writes a CWE,
+OWASP Top 10, ASVS, or CIS reference when it is verifiable. Cells without an
+honest match stay as `-`.
 
 ### Mapping conventions
 
@@ -704,8 +706,12 @@ stay as `-`.
   ([A01](https://owasp.org/Top10/A01_2021-Broken_Access_Control/),
   [A02](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/),
   [A05](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/),
-  ...). When a more specific Cheat Sheet or ASVS section applies it is
-  noted alongside the Top 10 cell.
+  ...). This column is not used for ASVS requirement IDs.
+- **ASVS** references are stored in a separate `ASVS` column after the ASVS
+  mapping PR adds it to the inventory tables. Use versioned IDs such as
+  `ASVS v5.0.0-3.4.1`; partial coverage must include a short parenthetical
+  limit, for example `ASVS v5.0.0-12.1.2 (partial: weak-pattern detection
+  only)`.
 - **CIS / vendor hardening** points at a specific section of a CIS Benchmark
   (e.g. *CIS Apache HTTP Server 2.4 Benchmark* §7.6) or an official vendor
   hardening guide. Universal rules delegate to the per-server tables because

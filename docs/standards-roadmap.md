@@ -53,6 +53,11 @@ vendor-specific section references are intentionally still pending.
 
 - Cite exact standard versions and exact identifiers. Do not add a CIS, ASVS,
   or vendor reference from memory.
+- Store confirmed ASVS references in a dedicated `ASVS` column in
+  `docs/rule-coverage.md`, inserted after the existing `OWASP` column. Do not
+  append ASVS IDs to the OWASP Top 10 column. Use the exact format
+  `ASVS v5.0.0-<requirement-id>`; partial matches must add a short limitation,
+  for example `ASVS v5.0.0-12.1.2 (partial: weak-pattern detection only)`.
 - Keep cells empty when the mapping is not honest. Operational advice can map
   to vendor hardening without forcing a CWE.
 - Do not copy long CIS or ASVS prose into this repository. Use section IDs,
@@ -65,6 +70,12 @@ vendor-specific section references are intentionally still pending.
   runtime behavior.
 - Mark host-level requirements as out of scope unless the tool adds an explicit
   host-inspection mode.
+
+Future ASVS row shape:
+
+| Rule ID | OWASP | ASVS | CIS / Vendor |
+| --- | --- | --- | --- |
+| `external.hsts_missing` | `[A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/)` | `ASVS v5.0.0-3.4.1` | `-` |
 
 Summary template for standards candidates:
 
@@ -93,7 +104,8 @@ Use these labels in follow-up PRs:
 
 1. Map existing rules to ASVS 5.0.0 where the match is direct. This document is
    the source of truth while references are still candidates. Only after review
-   should confirmed rule-level references be copied into `docs/rule-coverage.md`.
+   should confirmed rule-level references be copied into the dedicated `ASVS`
+   column in `docs/rule-coverage.md`.
 2. Walk CIS NGINX Benchmark 3.0.0 and fill Nginx CIS matches plus a Nginx gap
    table.
 3. Walk CIS Apache HTTP Server 2.4 Benchmark 2.3.0 and fill Apache CIS matches
@@ -225,7 +237,7 @@ standard section before implementation.
 
 | ID | Area | Gap type | Priority | Candidate work |
 | --- | --- | --- | --- | --- |
-| STD-GAP-001 | ASVS 5.0.0 | covered | P1 | Review the first-pass ASVS candidates above, then add exact ASVS references for already-covered TLS, HTTPS redirect, HSTS, cookie, CORS, security-header, and sensitive-path exposure rules. |
+| STD-GAP-001 | ASVS 5.0.0 | covered | P1 | Review the first-pass ASVS candidates above, then add exact ASVS references to the dedicated `ASVS` column for already-covered TLS, HTTPS redirect, HSTS, cookie, CORS, security-header, and sensitive-path exposure rules. |
 | STD-GAP-002 | Nginx CIS | covered | P1 | Fill CIS references for existing Nginx checks such as `server_tokens_on`, `autoindex_on`, logging, TLS protocol/cipher, request-size, and access-control rules after the NGINX 3.0.0 benchmark walk. |
 | STD-GAP-003 | Nginx CIS | direct-rule | P2 | Validate and potentially add Nginx TLS hardening rules not currently represented, such as session ticket, OCSP stapling completeness, or DH parameter posture checks. |
 | STD-GAP-004 | Nginx CIS | host-depth | P3 | Classify Nginx file ownership, permissions, package, service user, and filesystem layout recommendations as host-depth unless an explicit host mode is added. |
@@ -235,7 +247,7 @@ standard section before implementation.
 | STD-GAP-008 | IIS / Windows Server | covered | P1 | Map existing IIS and universal TLS/SChannel registry checks to active Windows Server or Microsoft hardening references where the requirement is host policy rather than IIS XML. |
 | STD-GAP-009 | IIS / vendor docs | direct-rule | P2 | Validate additional IIS XML checks around request filtering deny lists, handler exposure, authentication defaults, and response-header behavior against current Microsoft documentation. |
 | STD-GAP-010 | IIS legacy CIS | research | P3 | Decide whether unsupported CIS IIS 7/8 documents should be used only as historical notes, not as primary compliance references. |
-| STD-GAP-011 | External probes | covered | P1 | Add ASVS references for observable runtime behavior: TLS protocol negotiation, weak cipher negotiation, certificate validity, security headers, dangerous methods, and exposed sensitive files. |
+| STD-GAP-011 | External probes | covered | P1 | Add ASVS references to the dedicated `ASVS` column for observable runtime behavior: TLS protocol negotiation, weak cipher negotiation, certificate validity, security headers, dangerous methods, and exposed sensitive files. |
 | STD-GAP-012 | Standards output | direct-rule | P2 | After references stabilize, add optional report grouping by standard (`--group-by standard` or JSON `standards`) without changing rule behavior. |
 | STD-GAP-013 | ASVS 5.0.0 | direct-rule | P2 | Add CSP quality probes for `frame-ancestors`, `object-src`, `base-uri`, and reporting directives after deciding the desired strictness. |
 | STD-GAP-014 | ASVS 5.0.0 | probe-depth | P3 | Extend TLS probing for forward secrecy, cipher preference, OCSP stapling, and ECH before claiming deeper V12 coverage. |
