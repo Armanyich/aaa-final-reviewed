@@ -188,23 +188,72 @@ Count: 27
 
 Count: 15
 
+Stage 2 step 3 mapping: **complete** for this group. The CIS column is empty
+across the whole group: there is no official *CIS Lighttpd Benchmark*, so we
+do not invent one. Where vendor guidance from
+[lighttpd.net wiki](https://redmine.lighttpd.net/projects/lighttpd/wiki)
+applies, it is mentioned in the rationale below rather than in a column
+that would imply a benchmark mapping.
+
 | Rule ID | Severity | Input | Tags | CWE | OWASP | CIS / Vendor |
 | --- | --- | --- | --- | --- | --- | --- |
-| `lighttpd.access_log_missing` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.dir_listing_enabled` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.error_log_missing` | medium | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.max_connections_missing` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.max_request_size_missing` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.missing_strict_transport_security` | medium | effective | headers | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.missing_x_content_type_options` | medium | effective | headers | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.mod_cgi_enabled` | low | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.mod_status_public` | medium | effective | - | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.server_tag_not_blank` | low | effective | disclosure | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.ssl_engine_not_enabled` | medium | effective | tls | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.ssl_honor_cipher_order_missing` | medium | effective | tls | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.ssl_pemfile_missing` | high | ast | tls | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.url_access_deny_missing` | medium | ast | - | _TBD_ | _TBD_ | _TBD_ |
-| `lighttpd.weak_ssl_cipher_list` | high | ast | tls | _TBD_ | _TBD_ | _TBD_ |
+| `lighttpd.access_log_missing` | low | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - |
+| `lighttpd.dir_listing_enabled` | medium | effective | - | [CWE-548](https://cwe.mitre.org/data/definitions/548.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `lighttpd.error_log_missing` | medium | ast | - | [CWE-778](https://cwe.mitre.org/data/definitions/778.html) | [A09:2021](https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/) | - |
+| `lighttpd.max_connections_missing` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `lighttpd.max_request_size_missing` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - |
+| `lighttpd.missing_strict_transport_security` | medium | effective | headers | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `lighttpd.missing_x_content_type_options` | medium | effective | headers | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `lighttpd.mod_cgi_enabled` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `lighttpd.mod_status_public` | medium | effective | - | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `lighttpd.server_tag_not_blank` | low | effective | disclosure | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `lighttpd.ssl_engine_not_enabled` | medium | effective | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `lighttpd.ssl_honor_cipher_order_missing` | medium | effective | tls | [CWE-757](https://cwe.mitre.org/data/definitions/757.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `lighttpd.ssl_pemfile_missing` | high | ast | tls | [CWE-319](https://cwe.mitre.org/data/definitions/319.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+| `lighttpd.url_access_deny_missing` | medium | ast | - | [CWE-538](https://cwe.mitre.org/data/definitions/538.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - |
+| `lighttpd.weak_ssl_cipher_list` | high | ast | tls | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - |
+
+Mapping rationale (lighttpd rules):
+
+- `access_log_missing`, `error_log_missing` -- without access/error logs an
+  operator cannot detect or investigate attacks: textbook CWE-778
+  (insufficient logging), grouped under OWASP A09 (security logging and
+  monitoring failures).
+- `dir_listing_enabled` -- direct match for CWE-548. Categorised as A05
+  (misconfig) because lighttpd defaults are safe; the finding fires only
+  when the operator explicitly enables `dir-listing.activate`.
+- `max_connections_missing`, `max_request_size_missing` -- absence of
+  `server.max-connections` / `server.max-request-size` lets clients exhaust
+  connections or memory: CWE-770 (allocation of resources without limits).
+  We leave the OWASP cell empty: denial-of-service hardening does not have
+  a clean mapping in the 2021 Top 10, and forcing it under A05 would
+  overstretch the category.
+- `missing_strict_transport_security` -- without HSTS clients can be
+  downgraded to plaintext (CWE-319). Tracked as A05 (hardening header
+  misconfiguration), matching the universal HSTS rule's mapping.
+- `missing_x_content_type_options` -- missing protective response header:
+  CWE-693 (protection mechanism failure), OWASP A05.
+- `mod_cgi_enabled` -- enabling `mod_cgi` is not a vulnerability per se, it
+  is an attack-surface increase that violates least-privilege deployment.
+  No single CWE maps cleanly, so the CWE cell stays empty; OWASP A05 covers
+  it as a hardening item ("only enable modules you actually need").
+- `mod_status_public`, `server_tag_not_blank` -- both leak server-internal
+  information to unauthenticated clients: CWE-200 (information exposure),
+  OWASP A05.
+- `ssl_engine_not_enabled` -- a virtual host advertised over HTTPS but with
+  `ssl.engine = "disable"` falls back to plaintext: CWE-319, OWASP A02.
+- `ssl_honor_cipher_order_missing` -- letting the client pick the cipher
+  exposes the server to downgrade attacks: CWE-757 (selection of
+  less-secure algorithm during negotiation), OWASP A02.
+- `ssl_pemfile_missing` -- TLS enabled but no certificate path configured:
+  the listener cannot complete a TLS handshake and traffic falls to
+  plaintext (CWE-319, OWASP A02).
+- `url_access_deny_missing` -- without `url.access-deny` for `.bak`, `.sql`,
+  `.conf`, `.log`, the server can hand out backup/configuration files:
+  CWE-538 (file and directory information exposure), OWASP A05.
+- `weak_ssl_cipher_list` -- enabling RC4/DES/3DES/MD5/NULL/EXPORT cipher
+  tokens is the textbook CWE-327 (broken / risky cryptographic algorithm),
+  OWASP A02.
 
 ### IIS (Local)
 
@@ -324,7 +373,7 @@ Progress:
 - [x] Universal rules (11)
 - [ ] Nginx local rules (41)
 - [ ] Apache local rules (27)
-- [ ] Lighttpd local rules (15)
+- [x] Lighttpd local rules (15)
 - [ ] IIS local rules (20)
 - [ ] External (probe) rules (69)
 

@@ -168,6 +168,6 @@ Acceptance criteria:
 
 Stage 2 step 3 (standards mapping) is in progress. The inventory is exposed
 by `webconf-audit list-rules --format json` and `docs/rule-coverage.md`
-holds the standards mapping. Universal rules (11) are mapped; remaining
-groups are filled one server family per PR, only where the mapping is
-honest. Next group: Nginx local rules.
+holds the standards mapping. Universal (11) and Lighttpd local rules (15)
+are mapped; remaining groups are filled one server family per PR, only
+where the mapping is honest. Next group: Nginx local rules.
