@@ -246,8 +246,10 @@ Mapping rationale (lighttpd rules):
   exposes the server to downgrade attacks: CWE-757 (selection of
   less-secure algorithm during negotiation), OWASP A02.
 - `ssl_pemfile_missing` -- TLS enabled but no certificate path configured:
-  the listener cannot complete a TLS handshake and traffic falls to
-  plaintext (CWE-319, OWASP A02).
+  the listener cannot complete a TLS handshake, so HTTPS to that listener
+  fails outright. We keep CWE-319 / OWASP A02 because the rule still flags a
+  broken cryptographic deployment, but the failure mode is connection refusal,
+  not an automatic downgrade to plaintext.
 - `url_access_deny_missing` -- without `url.access-deny` for `.bak`, `.sql`,
   `.conf`, `.log`, the server can hand out backup/configuration files:
   CWE-538 (file and directory information exposure), OWASP A05.
