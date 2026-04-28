@@ -111,7 +111,7 @@ Use these labels in follow-up PRs:
    the source of truth while references are still candidates. Only after review
    should confirmed rule-level references be copied into the dedicated `ASVS`
    column in `docs/rule-coverage.md`.
-2. Walk CIS NGINX Benchmark 3.0.0 and fill Nginx CIS matches plus a Nginx gap
+2. Walk CIS NGINX Benchmark v3.0.0 and fill Nginx CIS matches plus a Nginx gap
    table.
 3. Walk CIS Apache HTTP Server 2.4 Benchmark 2.3.0 and fill Apache CIS matches
    plus an Apache gap table.
@@ -152,7 +152,7 @@ finalized mapping — such as adding a verified `[CIS ...]` link in the
 existing rule rows of `docs/rule-coverage.md` — must be deferred to the
 follow-up PR for that server family.
 
-Planning output for CIS NGINX Benchmark 3.0.0:
+Planning output for CIS NGINX Benchmark v3.0.0:
 
 - confirm the benchmark version and source link used for the walk;
 - list the existing Nginx rules that are likely CIS-backed, including
@@ -331,7 +331,7 @@ standard section before implementation.
 | ID | Area | Gap type | Priority | Candidate work |
 | --- | --- | --- | --- | --- |
 | STD-GAP-001 | ASVS 5.0.0 | covered | P1 | First-pass direct/partial references are copied into the dedicated `ASVS` column for already-covered TLS, HTTPS redirect, HSTS, cookie, CORS, security-header, and sensitive-path exposure rules. Remaining ASVS items stay in the follow-up gap list. |
-| STD-GAP-002 | Nginx CIS | covered | P1 | Existing-rule CIS references and the Nginx-specific gap table are recorded in `docs/rule-coverage.md` from the CIS NGINX Benchmark 3.0.0 walk. |
+| STD-GAP-002 | Nginx CIS | covered | P1 | Existing-rule CIS references and the Nginx-specific gap table are recorded in `docs/rule-coverage.md` from the CIS NGINX Benchmark v3.0.0 walk. |
 | STD-GAP-003 | Nginx CIS | direct-rule | P2 | Add follow-up Nginx rules for benchmark items that current parser data can support, such as unknown-host rejection, value validation for timeout/limit directives, HTTPS redirects, cipher-string validation, OCSP stapling completeness, and session resumption policy. |
 | STD-GAP-004 | Nginx CIS | host-depth | P3 | Keep Nginx package, service account, file ownership, permissions, private-key permissions, and PID-file recommendations in host-depth unless an explicit host mode is added. |
 | STD-GAP-005 | Apache CIS | covered | P1 | Fill CIS references for existing Apache checks such as `server_tokens_not_prod`, `server_signature_not_off`, `trace_enable_not_off`, `options_indexes`, status/info exposure, request limits, and logging. |
