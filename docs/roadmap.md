@@ -145,13 +145,13 @@ Process:
    - CWE where a rule has a clear weakness class
    - OWASP where a rule supports an application security control
    - CIS or vendor hardening guidance where a rule is configuration-specific
-4. For candidate standards items, classify each gap:
+4. For candidate standards items, classify each gap and record the standards
+   backlog in `docs/standards-roadmap.md`:
    - direct rule can be added now
    - rule requires deeper parser/effective-config analysis
    - rule requires deeper external probing
    - rule is out of scope for this tool
-5. Build a separate standards roadmap from that gap analysis.
-6. Implement new work in small PRs:
+5. Implement new work in small PRs:
    - first add parser/probe depth when needed
    - then add the rule
    - then add mapping metadata and tests

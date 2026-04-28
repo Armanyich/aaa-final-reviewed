@@ -27,11 +27,15 @@ Sources checked on 2026-04-28:
   the public CIS Windows Server page lists active Windows Server Benchmarks for
   2025, 2022, 2019, 2016, and older versions. These are relevant to
   IIS-adjacent host policy, especially TLS and service hardening.
+- [CIS Microsoft IIS Benchmark](https://www.cisecurity.org/benchmark/microsoft_iis):
+  the public CIS Microsoft IIS page lists Microsoft IIS 10 Benchmark 1.2.1
+  among the current available Benchmark PDF versions. Treat it as the primary
+  CIS source for IIS-specific hardening, with Windows Server benchmarks used
+  for host and SChannel policy.
 - [CIS unsupported Benchmarks](https://www.cisecurity.org/unsupported-cis-benchmarks):
-  the public unsupported list contains legacy IIS 5/6/7/8 benchmarks. No active
-  standalone Microsoft IIS Benchmark was found in the current public CIS
-  catalog. Treat those legacy IIS documents as non-authoritative unless a
-  future task explicitly scopes them.
+  the public unsupported list can still contain legacy IIS documents. Treat
+  unsupported or archived IIS benchmarks as non-authoritative unless a future
+  task explicitly scopes them.
 
 The current project inventory is 183 rules:
 
@@ -52,12 +56,24 @@ vendor-specific section references are intentionally still pending.
 - Keep cells empty when the mapping is not honest. Operational advice can map
   to vendor hardening without forcing a CWE.
 - Do not copy long CIS or ASVS prose into this repository. Use section IDs,
-  short titles, and our own summary.
+  short titles, and our own summary. Direct quotes are limited to one short
+  fragment of 25 words or fewer per standard item, and must include a source
+  section ID or URL plus an `evidence_justification` note explaining why the
+  exact wording is needed.
 - Prefer existing local parser/effective-config data over raw string matching.
 - Prefer external probe rules only when the configured intent cannot prove the
   runtime behavior.
 - Mark host-level requirements as out of scope unless the tool adds an explicit
   host-inspection mode.
+
+Summary template for standards candidates:
+
+- Standard ID and short title.
+- Scanner signal that can prove or disprove the item.
+- Gap label from the table below.
+- Source section ID or URL.
+- Visibility limits and false-positive risk.
+- Optional `evidence_justification` when a short quote is unavoidable.
 
 ## Gap Types
 
@@ -82,9 +98,10 @@ Use these labels in follow-up PRs:
    table.
 3. Walk CIS Apache HTTP Server 2.4 Benchmark 2.3.0 and fill Apache CIS matches
    plus an Apache gap table.
-4. Decide the IIS source of truth: active CIS Windows Server Benchmarks for
-   host/SChannel policy, vendor IIS documentation for IIS XML policy, and
-   legacy unsupported CIS IIS only when explicitly called out.
+4. Decide the IIS source of truth: active CIS Microsoft IIS 10 Benchmark 1.2.1
+   for IIS policy, active CIS Windows Server Benchmarks for host/SChannel
+   policy, vendor IIS documentation for implementation detail, and legacy
+   unsupported CIS IIS only when explicitly called out.
 5. Add standards metadata to rule definitions only after the doc mapping is
    stable enough to avoid churn in CLI output.
 6. Implement new rules in small PRs. If a candidate needs parser or probe
