@@ -168,11 +168,11 @@ Acceptance criteria:
 
 Stage 2 step 4 is now active. `docs/standards-roadmap.md` defines the
 standards source baseline, gap labels, work order, and initial backlog for
-ASVS 5.0.0, CIS NGINX Benchmark 3.0.0, CIS Apache HTTP Server 2.4 Benchmark
+ASVS 5.0.0, CIS NGINX Benchmark v3.0.0, CIS Apache HTTP Server 2.4 Benchmark
 2.3.0, IIS / Windows Server hardening sources, and future standards-aware
 reporting.
 
-Next step: use the `Server Standards Planning Pass` section in
-`docs/standards-roadmap.md` as the guardrail for the remaining server-standard
-work, then fill the separate mapping PRs in order: CIS Nginx, CIS Apache, and
-IIS / Windows source-of-truth.
+Current step: CIS Nginx mapping — a follow-up mapping PR after the `Server
+Standards Planning Pass` in `docs/standards-roadmap.md`. After review, continue
+with the remaining follow-up mapping PRs in order: CIS Apache, then IIS /
+Windows source-of-truth.
