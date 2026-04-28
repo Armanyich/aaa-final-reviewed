@@ -86,6 +86,10 @@ Acceptance criteria:
 - The default local interactive behavior remains unchanged unless CI flags are
   used.
 
+Status: stable fingerprints and severity-based CI exit codes are implemented.
+The suppression file and CI examples are covered by the suppression-file
+milestone branch.
+
 ### 3. Baseline/Diff Reporting
 
 Goal: make reports show what is new and what was fixed compared with a previous
