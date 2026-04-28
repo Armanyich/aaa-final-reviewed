@@ -96,6 +96,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
+      # To create the initial committed baseline:
+      # webconf-audit analyze-nginx nginx.conf --write-baseline webconf-audit-baseline.json
       - run: webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json --fail-on-new medium --format json > webconf-audit.json
       - uses: actions/upload-artifact@v4
         if: always()
@@ -111,6 +113,8 @@ webconf-audit:
   image: python:3.12
   script:
     - python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
+    # To create the initial committed baseline:
+    # webconf-audit analyze-nginx nginx.conf --write-baseline webconf-audit-baseline.json
     - webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json --fail-on-new medium --format json > webconf-audit.json
   artifacts:
     when: always
@@ -133,6 +137,8 @@ steps:
       versionSpec: "3.12"
   - script: |
       python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
+      # To create the initial committed baseline:
+      # webconf-audit analyze-nginx nginx.conf --write-baseline webconf-audit-baseline.json
       webconf-audit analyze-nginx nginx.conf --baseline webconf-audit-baseline.json --fail-on-new medium --format json > webconf-audit.json
     displayName: Run webconf-audit
   - publish: webconf-audit.json

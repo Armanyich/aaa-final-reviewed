@@ -83,6 +83,23 @@ def test_apply_baseline_diff_groups_new_unchanged_and_resolved_findings() -> Non
     ]
 
 
+def test_apply_baseline_diff_compares_fingerprints_case_insensitively() -> None:
+    finding = _finding("nginx.server_tokens_on", line=10)
+    baseline_payload = baseline_from_report(ReportData(results=[_result([finding])]))
+    baseline_entry = dict(baseline_payload["findings"][0])  # type: ignore[index]
+    baseline_entry["fingerprint"] = str(baseline_entry["fingerprint"]).upper()
+    baseline = Baseline(entries=(baseline_entry,), source_path="baseline.json")
+    current_report = ReportData(results=[_result([finding])])
+
+    apply_baseline_diff(current_report, baseline)
+
+    assert current_report.baseline_diff is not None
+    assert current_report.baseline_diff["new_findings"] == []
+    assert [entry["rule_id"] for entry in current_report.baseline_diff["unchanged_findings"]] == [
+        "nginx.server_tokens_on"
+    ]
+
+
 def test_apply_baseline_diff_keeps_currently_suppressed_findings_out_of_resolved() -> None:
     baseline_payload = baseline_from_report(
         ReportData(results=[_result([_finding("nginx.server_tokens_on", line=12)])])
@@ -118,6 +135,30 @@ def test_apply_baseline_diff_keeps_currently_suppressed_findings_out_of_resolved
     assert len(report.baseline_diff["suppressed_findings"]) == 1
 
 
+def test_apply_baseline_diff_compares_suppressed_fingerprints_case_insensitively() -> None:
+    baseline_payload = baseline_from_report(
+        ReportData(results=[_result([_finding("nginx.server_tokens_on", line=12)])])
+    )
+    baseline_entry = baseline_payload["findings"][0]  # type: ignore[index]
+    baseline = Baseline(entries=(baseline_entry,), source_path="baseline.json")
+    result = _result([])
+    result.metadata[SUPPRESSED_FINDINGS_METADATA_KEY] = [
+        {
+            "fingerprint": str(baseline_entry["fingerprint"]).upper(),
+            "rule_id": "nginx.server_tokens_on",
+            "reason": "accepted",
+            "expires": "2099-01-01",
+        }
+    ]
+    report = ReportData(results=[result])
+
+    apply_baseline_diff(report, baseline)
+
+    assert report.baseline_diff is not None
+    assert report.baseline_diff["resolved_findings"] == []
+    assert len(report.baseline_diff["suppressed_findings"]) == 1
+
+
 def test_load_baseline_file_accepts_json_report_findings(tmp_path) -> None:
     report_payload = baseline_from_report(ReportData(results=[_result([_finding("x.rule")])]))
     report_path = tmp_path / "report.json"
@@ -128,6 +169,21 @@ def test_load_baseline_file_accepts_json_report_findings(tmp_path) -> None:
     assert loaded.baseline is not None
     assert loaded.issues == ()
     assert len(loaded.baseline.entries) == 1
+
+
+def test_load_baseline_file_rejects_unsupported_version(tmp_path) -> None:
+    baseline_path = tmp_path / "baseline.json"
+    baseline_path.write_text(
+        json.dumps({"version": 999, "findings": []}),
+        encoding="utf-8",
+    )
+
+    loaded = load_baseline_file(str(baseline_path))
+
+    assert loaded.baseline is None
+    assert loaded.failed is True
+    assert loaded.issues[0].code == "baseline_file_invalid"
+    assert "Unsupported baseline version" in loaded.issues[0].message
 
 
 def test_load_baseline_file_reports_invalid_fingerprint(tmp_path) -> None:

@@ -9,6 +9,7 @@ from typing import Any
 
 from webconf_audit.models import AnalysisIssue, AnalysisResult, SourceLocation
 from webconf_audit.report import (
+    BaselineDiff,
     ReportData,
     deduplicated_finding_pairs,
     finding_payload,
@@ -129,12 +130,12 @@ def apply_baseline_diff(report: ReportData, baseline: Baseline) -> ReportData:
     new_findings = [
         entry
         for entry in current_entries
-        if entry["fingerprint"] not in baseline_by_fingerprint
+        if _fingerprint_key(entry) not in baseline_by_fingerprint
     ]
     unchanged_findings = [
         entry
         for entry in current_entries
-        if entry["fingerprint"] in baseline_by_fingerprint
+        if _fingerprint_key(entry) in baseline_by_fingerprint
     ]
     resolved_findings = [
         entry
@@ -142,13 +143,14 @@ def apply_baseline_diff(report: ReportData, baseline: Baseline) -> ReportData:
         if fingerprint not in current_by_fingerprint and fingerprint not in suppressed_by_fingerprint
     ]
 
-    report.baseline_diff = {
+    diff: BaselineDiff = {
         "baseline_path": baseline.source_path,
         "new_findings": new_findings,
         "unchanged_findings": unchanged_findings,
         "resolved_findings": resolved_findings,
         "suppressed_findings": suppressed_entries,
     }
+    report.baseline_diff = diff
     return report
 
 
@@ -219,6 +221,16 @@ def _baseline_entries(
             ),
         )
 
+    raw_version = data.get("version")
+    if raw_version is not None and raw_version != BASELINE_VERSION:
+        return [], (
+            _issue(
+                "baseline_file_invalid",
+                f"Unsupported baseline version: {raw_version}. Expected: {BASELINE_VERSION}.",
+                source_path,
+            ),
+        )
+
     raw_findings = data.get("findings")
     if not isinstance(raw_findings, list):
         return [], (
@@ -285,10 +297,17 @@ def _entries_by_fingerprint(
 ) -> dict[str, dict[str, object]]:
     by_fingerprint: dict[str, dict[str, object]] = {}
     for entry in entries:
-        fingerprint = _string_value(entry.get("fingerprint"))
+        fingerprint = _fingerprint_key(entry)
         if fingerprint is not None:
             by_fingerprint[fingerprint] = entry
     return by_fingerprint
+
+
+def _fingerprint_key(entry: dict[str, object]) -> str | None:
+    fingerprint = _string_value(entry.get("fingerprint"))
+    if fingerprint is None:
+        return None
+    return fingerprint.lower()
 
 
 def _location_display(value: object) -> str | None:

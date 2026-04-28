@@ -8,9 +8,8 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any
-
 from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
 
 from webconf_audit.fingerprints import finding_fingerprint
 from webconf_audit.models import (
@@ -38,6 +37,16 @@ _ISSUE_LEVEL_ORDER: dict[str, int] = {
 }
 
 _ALL_SEVERITIES: list[Severity] = ["critical", "high", "medium", "low", "info"]
+
+
+class BaselineDiff(TypedDict, total=False):
+    """Diff groups produced by comparing a report with a baseline."""
+
+    baseline_path: str
+    new_findings: list[dict[str, object]]
+    unchanged_findings: list[dict[str, object]]
+    resolved_findings: list[dict[str, object]]
+    suppressed_findings: list[dict[str, object]]
 
 # ---------------------------------------------------------------------------
 # Deduplication: universal vs server-specific rule mapping
@@ -222,7 +231,7 @@ class ReportData(BaseModel):
     generated_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
     )
-    baseline_diff: dict[str, Any] | None = None
+    baseline_diff: BaselineDiff | None = None
 
     @property
     def all_findings_raw(self) -> list[Finding]:
@@ -390,7 +399,7 @@ def _report_summary_lines(
     return lines
 
 
-def _baseline_diff_section_lines(baseline_diff: dict[str, Any] | None) -> list[str]:
+def _baseline_diff_section_lines(baseline_diff: BaselineDiff | None) -> list[str]:
     if baseline_diff is None:
         return []
 
@@ -412,7 +421,7 @@ def _baseline_diff_section_lines(baseline_diff: dict[str, Any] | None) -> list[s
     return lines
 
 
-def _diff_entries(baseline_diff: dict[str, Any], key: str) -> list[dict[str, object]]:
+def _diff_entries(baseline_diff: BaselineDiff, key: str) -> list[dict[str, object]]:
     entries = baseline_diff.get(key)
     if not isinstance(entries, list):
         return []
@@ -857,6 +866,7 @@ def _summary_string_list(value: object) -> list[str]:
 
 __all__ = [
     "JsonFormatter",
+    "BaselineDiff",
     "ReportData",
     "ReportSummary",
     "TextFormatter",
