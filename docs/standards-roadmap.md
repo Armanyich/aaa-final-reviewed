@@ -75,9 +75,9 @@ Use these labels in follow-up PRs:
 
 ## Work Order
 
-1. Map existing rules to ASVS 5.0.0 where the match is direct. The first pass
-   is listed below; a follow-up PR should write the reviewed references into
-   `docs/rule-coverage.md`.
+1. Map existing rules to ASVS 5.0.0 where the match is direct. This document is
+   the source of truth while references are still candidates. Only after review
+   should confirmed rule-level references be copied into `docs/rule-coverage.md`.
 2. Walk CIS NGINX Benchmark 3.0.0 and fill Nginx CIS matches plus a Nginx gap
    table.
 3. Walk CIS Apache HTTP Server 2.4 Benchmark 2.3.0 and fill Apache CIS matches
@@ -104,17 +104,20 @@ Primary ASVS chapters for the current rule set:
 - [V13 Configuration](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x22-V13-Configuration.md)
 - [V16 Security Logging and Error Handling](https://github.com/OWASP/ASVS/blob/v5.0.0/5.0/en/0x25-V16-Security-Logging-and-Error-Handling.md)
 
-### Direct Coverage Candidates
+### Direct Coverage Candidates (partial where noted)
 
 These requirements have enough current signal to justify adding ASVS references
-to `docs/rule-coverage.md` after review:
+to `docs/rule-coverage.md` after review. Items marked partial need the stated
+limit recorded with the reference or moved to the gap list:
 
 - `v5.0.0-12.1.1` - TLS protocol version posture. Covered by weak protocol
   rules such as `universal.weak_tls_protocol`, `nginx.weak_ssl_protocols`,
   and external TLS protocol probes.
-- `v5.0.0-12.1.2` - recommended cipher suite posture. Covered for known-weak
-  cipher detection by `universal.weak_tls_ciphers`,
-  `lighttpd.weak_ssl_cipher_list`, and `external.weak_cipher_suite`.
+- `v5.0.0-12.1.2` - recommended cipher suite posture. Partial coverage:
+  current rules detect known-weak cipher patterns via
+  `universal.weak_tls_ciphers`, `lighttpd.weak_ssl_cipher_list`, and
+  `external.weak_cipher_suite`, but do not yet prove full recommended-suite
+  posture, forward secrecy, or server preference.
 - `v5.0.0-12.2.1` - HTTPS must not fall back to cleartext. Covered by
   HTTPS/TLS intent and redirect findings such as
   `universal.tls_intent_without_config`, `external.https_not_available`, and
@@ -124,21 +127,26 @@ to `docs/rule-coverage.md` after review:
   `external.cert_chain_incomplete`, `external.cert_san_mismatch`,
   and `external.certificate_expired`.
 - `v5.0.0-3.3.1`, `v5.0.0-3.3.2`, and `v5.0.0-3.3.4` - observable cookie
-  security attributes. Covered by the external cookie rules for `Secure`,
-  `SameSite`, `SameSite=None` plus `Secure`, and `HttpOnly`.
+  security attributes. Partial coverage: external cookie rules check `Secure`,
+  `SameSite`, `SameSite=None` plus `Secure`, and `HttpOnly`, but do not yet
+  validate `__Host-` / `__Secure-` prefix guidance.
 - `v5.0.0-3.4.1` - HSTS response header. Covered by universal, local, and
   external HSTS rules, including max-age and includeSubDomains probes.
-- `v5.0.0-3.4.2` - CORS origin restrictions. Partly covered where the runtime
-  response exposes wildcard origins or wildcard origins with credentials.
-- `v5.0.0-3.4.3` - CSP response header. Covered for missing CSP and the
-  existing unsafe-inline / unsafe-eval runtime checks; advanced policy quality
-  remains a gap below.
+- `v5.0.0-3.4.2` - CORS origin restrictions. Partial coverage: runtime probes
+  detect wildcard origins and wildcard origins with credentials, but cannot
+  prove an application allowlist or whether a wildcard response contains
+  sensitive information.
+- `v5.0.0-3.4.3` - CSP response header. Partial coverage: current rules detect
+  missing CSP and unsafe-inline / unsafe-eval, but do not yet validate minimum
+  policy quality such as `object-src`, `base-uri`, nonces, hashes, or
+  per-response policy.
 - `v5.0.0-3.4.4` - `X-Content-Type-Options: nosniff`. Covered by universal,
   local, and external missing/invalid header checks.
 - `v5.0.0-3.4.5` - Referrer-Policy. Covered by missing/unsafe Referrer-Policy
   checks where headers are visible.
-- `v5.0.0-3.4.8` - COOP. Covered by `external.coop_missing` for observable
-  runtime responses.
+- `v5.0.0-3.4.8` - COOP. Partial coverage: `external.coop_missing` can flag
+  missing COOP on observed runtime responses, but does not determine which
+  responses initiate document rendering.
 - `v5.0.0-13.4.1` - source control metadata must not be exposed. Covered by
   external `.git` and `.svn` metadata probes.
 - `v5.0.0-13.4.2` - production debug features must be disabled. Covered for
@@ -153,8 +161,9 @@ to `docs/rule-coverage.md` after review:
 - `v5.0.0-13.4.6` - backend component versions should not be disclosed.
   Covered by server identification, `Server`, `X-Powered-By`,
   `X-AspNet-Version`, and server-token rules.
-- `v5.0.0-16.5.1` - generic errors for unexpected/sensitive failures. Covered
-  only for web-server-visible detailed error pages and framework diagnostics.
+- `v5.0.0-16.5.1` - generic errors for unexpected/sensitive failures. Partial
+  coverage: current rules only see web-server-visible detailed error pages and
+  framework diagnostics.
 
 ### Partial Or Follow-up Gaps
 
