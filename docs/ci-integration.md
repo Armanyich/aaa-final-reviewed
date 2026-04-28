@@ -60,7 +60,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install git+https://github.com/Armanyich/aaa-final-reviewed.git
+      - run: python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
       - run: webconf-audit analyze-nginx nginx.conf --fail-on medium --format json > webconf-audit.json
       - uses: actions/upload-artifact@v4
         if: always()
@@ -75,7 +75,7 @@ jobs:
 webconf-audit:
   image: python:3.12
   script:
-    - python -m pip install git+https://github.com/Armanyich/aaa-final-reviewed.git
+    - python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
     - webconf-audit analyze-nginx nginx.conf --fail-on medium --format json > webconf-audit.json
   artifacts:
     when: always
@@ -97,7 +97,7 @@ steps:
     inputs:
       versionSpec: "3.12"
   - script: |
-      python -m pip install git+https://github.com/Armanyich/aaa-final-reviewed.git
+      python -m pip install "webconf-audit @ git+https://github.com/Armanyich/aaa-final-reviewed.git@v0.1.0"
       webconf-audit analyze-nginx nginx.conf --fail-on medium --format json > webconf-audit.json
     displayName: Run webconf-audit
   - publish: webconf-audit.json

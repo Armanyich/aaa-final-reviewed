@@ -813,6 +813,32 @@ def test_explicit_missing_suppression_file_fails_ci_gate(monkeypatch) -> None:
     assert "suppression_file_not_found" in result.stdout
 
 
+def test_explicit_missing_suppression_file_fails_without_ci_gate(monkeypatch) -> None:
+    def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
+        return AnalysisResult(
+            mode="local",
+            target=config_path,
+            server_type="nginx",
+            findings=[],
+            issues=[],
+        )
+
+    monkeypatch.setattr("webconf_audit.cli.analyze_nginx_config", fake_analyze_nginx_config)
+
+    result = runner.invoke(
+        app,
+        [
+            "analyze-nginx",
+            "nginx.conf",
+            "--suppressions",
+            "missing.yml",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "suppression_file_not_found" in result.stdout
+
+
 def test_without_fail_on_keeps_interactive_exit_zero(monkeypatch) -> None:
     def fake_analyze_nginx_config(config_path: str) -> AnalysisResult:
         return AnalysisResult(

@@ -86,9 +86,8 @@ Acceptance criteria:
 - The default local interactive behavior remains unchanged unless CI flags are
   used.
 
-Status: stable fingerprints and severity-based CI exit codes are implemented.
-The suppression file and CI examples are covered by the suppression-file
-milestone branch.
+Status: implemented by stable fingerprints, severity-based CI exit codes,
+`.webconf-audit-ignore.yml` suppressions with reason/expiry, and CI examples.
 
 ### 3. Baseline/Diff Reporting
 
@@ -164,5 +163,5 @@ Acceptance criteria:
 
 ## Current Priority
 
-The next concrete task after merging milestone 1 is milestone 2: CI integration
-features for users.
+The next concrete task after merging milestone 2 is milestone 3: baseline/diff
+reporting.

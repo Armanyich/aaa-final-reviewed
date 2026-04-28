@@ -244,7 +244,7 @@ def _parse_entry(
     reason = _required_string(raw_entry, "reason")
     expires, expiry_error = _expires_date(raw_entry)
     fingerprint = _optional_fingerprint(raw_entry)
-    criteria = _criteria(raw_entry)
+    criteria = _normalized_criteria(raw_entry)
 
     errors: list[str] = []
     if rule_id is None:
@@ -253,7 +253,7 @@ def _parse_entry(
         errors.append("'reason' is required")
     if expiry_error is not None:
         errors.append(expiry_error)
-    if fingerprint is None and _has_raw_value(raw_entry, "fingerprint"):
+    if _has_invalid_fingerprint(raw_entry, fingerprint):
         errors.append("'fingerprint' must be a 64-character SHA-256 hex string")
     if fingerprint is None and not _has_locator(criteria):
         errors.append("either 'fingerprint' or locator fields are required")
@@ -300,11 +300,17 @@ def _parse_entry(
     )
 
 
-def _criteria(raw_entry: dict[object, object]) -> dict[str, object]:
+def _normalized_criteria(raw_entry: dict[object, object]) -> dict[str, object]:
     criteria: dict[str, object] = {}
     for field in _CRITERIA_FIELDS:
         if _has_raw_value(raw_entry, field):
-            criteria[field] = raw_entry[field]
+            value = raw_entry[field]
+            if field == "line":
+                criteria[field] = value
+                continue
+            normalized = _optional_string_value(value)
+            if normalized is not None:
+                criteria[field] = normalized
     return criteria
 
 
@@ -321,7 +327,10 @@ def _required_string(raw_entry: dict[object, object], field: str) -> str | None:
 
 
 def _optional_string(raw_entry: dict[str, object], field: str) -> str | None:
-    value = raw_entry.get(field)
+    return _optional_string_value(raw_entry.get(field))
+
+
+def _optional_string_value(value: object) -> str | None:
     if value is None:
         return None
     if not isinstance(value, str):
@@ -338,6 +347,12 @@ def _optional_fingerprint(raw_entry: dict[object, object]) -> str | None:
     if len(normalized) != 64 or any(char not in _HEX_DIGITS for char in normalized):
         return None
     return normalized
+
+
+def _has_invalid_fingerprint(raw_entry: dict[object, object], fingerprint: str | None) -> bool:
+    if "fingerprint" not in raw_entry or raw_entry["fingerprint"] is None:
+        return False
+    return fingerprint is None
 
 
 def _expires_date(raw_entry: dict[object, object]) -> tuple[date | None, str | None]:
