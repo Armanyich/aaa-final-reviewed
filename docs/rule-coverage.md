@@ -687,9 +687,9 @@ Progress:
 - [x] IIS local rules (20) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [x] External (probe) rules (69) — CWE/OWASP filled; CIS not applicable (probes)
 
-Stage 2 step 3 complete for CWE / OWASP. CIS section numbers and OWASP ASVS
-references are deferred to Stage 2 step 4 (gap analysis), where each
-benchmark is walked end-to-end so references match the published versions.
+Stage 2 step 3 is complete for CWE / OWASP. CIS section numbers and OWASP
+ASVS references are tracked in `docs/standards-roadmap.md`, where each
+benchmark is planned end-to-end before references are written into this table.
 
 Each follow-up PR fills one server family at a time and only writes a CWE,
 OWASP, or CIS reference when it is verifiable. Cells without an honest match

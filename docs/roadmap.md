@@ -166,10 +166,12 @@ Acceptance criteria:
 
 ## Current Priority
 
-Stage 2 step 3 (standards mapping) is **CWE / OWASP complete** for all 183
-rules: Universal (11), Lighttpd (15), Nginx (41), Apache (27), IIS (20)
-and External probes (69) all carry honest CWE / OWASP cells in
-`docs/rule-coverage.md`. Next step: Stage 2 step 4 — gap analysis. Walk
-through CIS Nginx / Apache / IIS Benchmarks and OWASP ASVS, fill in the
-CIS column where references match the published versions, and start a
-`docs/standards-roadmap.md` listing the gaps that justify new rules.
+Stage 2 step 4 is now active. `docs/standards-roadmap.md` defines the
+standards source baseline, gap labels, work order, and initial backlog for
+ASVS 5.0.0, CIS NGINX Benchmark 3.0.0, CIS Apache HTTP Server 2.4 Benchmark
+2.3.0, IIS / Windows Server hardening sources, and future standards-aware
+reporting.
+
+Next step: walk one standard family at a time, starting with ASVS references
+for already-covered runtime and header rules, then CIS Nginx, then CIS Apache,
+then IIS / Windows Server source-of-truth decisions.
