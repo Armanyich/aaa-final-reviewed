@@ -270,7 +270,11 @@ A standards-driven rule is ready only when:
 - the source reference is versioned and exact;
 - the rule explains which config/probe signal proves the finding;
 - tests include a positive case, negative case, and at least one inherited or
-  scoped config case when the server supports inheritance;
+  scoped config case when the server supports inheritance; for probe-based or
+  runtime rules, the scoped equivalent can be different observable runtime
+  conditions (such as HTTP path, redirect target, endpoint mode, or probe
+  result) or a controlled config fixture that changes the observed probe signal
+  without relying on host inspection;
 - `docs/rule-coverage.md` is updated in the same PR;
 - false-positive risk is described when the source item depends on host state
   not visible to the current analyzer.
