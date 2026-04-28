@@ -12,7 +12,7 @@ from webconf_audit.external.rules._methods import collect_method_findings
 from webconf_audit.external.rules._sensitive_paths import collect_sensitive_path_findings
 from webconf_audit.external.rules._tls import collect_tls_findings
 from webconf_audit.models import Finding
-from webconf_audit.rule_registry import RuleMeta, registry
+from webconf_audit.rule_registry import RuleMeta, RuleRegistry, registry
 
 if TYPE_CHECKING:
     from webconf_audit.external.recon import (
@@ -108,9 +108,15 @@ _EXTERNAL_RULE_METAS = [
     RuleMeta(rule_id="external.cert_san_mismatch", title="Certificate SAN does not match hostname", severity="medium", description="Certificate SAN does not match target hostname.", recommendation="Issue a certificate with correct SAN.", category="external", input_kind="probe", order=709),
 ]
 
-for _m in _EXTERNAL_RULE_METAS:
-    if registry.get_meta(_m.rule_id) is None:
-        registry.register_meta(_m)
+def register_external_rule_metas(target_registry: RuleRegistry | None = None) -> None:
+    """Register metadata-only external rules into the target registry."""
+    active_registry = target_registry or registry
+    for meta in _EXTERNAL_RULE_METAS:
+        if active_registry.get_meta(meta.rule_id) is None:
+            active_registry.register_meta(meta)
+
+
+register_external_rule_metas()
 
 
 def run_external_rules(
@@ -149,4 +155,4 @@ def run_external_rules(
     return findings
 
 
-__all__ = ["run_external_rules"]
+__all__ = ["register_external_rule_metas", "run_external_rules"]

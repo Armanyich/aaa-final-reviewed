@@ -701,8 +701,9 @@ def _ensure_rule_metadata_loaded() -> None:
     registry.ensure_loaded("webconf_audit.local.apache.rules")
     registry.ensure_loaded("webconf_audit.local.lighttpd.rules")
     registry.ensure_loaded("webconf_audit.local.iis.rules")
-    # External meta-only rules register on import.
-    import webconf_audit.external.rules._runner  # noqa: F401
+    from webconf_audit.external.rules._runner import register_external_rule_metas
+
+    register_external_rule_metas()
 
 
 def _standards_for_rule(rule_id: str) -> tuple[StandardReference, ...]:

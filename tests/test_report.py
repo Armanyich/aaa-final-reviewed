@@ -11,6 +11,7 @@ from webconf_audit.models import (
     SourceLocation,
 )
 from webconf_audit.report import JsonFormatter, ReportData, TextFormatter
+from webconf_audit.rule_registry import registry
 from webconf_audit.suppressions import SUPPRESSED_FINDINGS_METADATA_KEY
 
 
@@ -534,6 +535,18 @@ class TestJsonFormatter:
             "finding_count": 1,
             "rule_ids": ["universal.weak_tls_protocol"],
         } in parsed["standards"]
+
+    def test_json_formatter_reloads_external_metadata_after_registry_clear(self) -> None:
+        registry.clear()
+        assert registry.get_meta("external.https_not_available") is None
+
+        JsonFormatter().format(
+            ReportData(
+                results=[_result(findings=[_finding(rule_id="external.https_not_available")])]
+            )
+        )
+
+        assert registry.get_meta("external.https_not_available") is not None
 
     def test_json_uses_baseline_diff_suppressed_findings_when_available(self) -> None:
         r = _result()

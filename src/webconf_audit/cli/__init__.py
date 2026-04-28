@@ -612,14 +612,14 @@ def _available_rule_tags() -> set[str]:
 def _ensure_all_rules_loaded() -> None:
     """Load all rule packages + meta-only registrations into the registry."""
     from webconf_audit.rule_registry import registry
+    from webconf_audit.external.rules._runner import register_external_rule_metas
 
     registry.ensure_loaded("webconf_audit.local.rules.universal")
     registry.ensure_loaded("webconf_audit.local.nginx.rules")
     registry.ensure_loaded("webconf_audit.local.apache.rules")
     registry.ensure_loaded("webconf_audit.local.lighttpd.rules")
     registry.ensure_loaded("webconf_audit.local.iis.rules")
-    # External meta-only rules register on import.
-    import webconf_audit.external.rules._runner  # noqa: F401
+    register_external_rule_metas()
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ import pkgutil
 import pytest
 
 import webconf_audit.local.iis.rules as iis_rules_package
+from webconf_audit.external.rules._runner import register_external_rule_metas
 from webconf_audit.rule_registry import RuleRegistry
 
 
@@ -29,12 +30,7 @@ def _fresh_registry() -> RuleRegistry:
     reg.ensure_loaded("webconf_audit.local.apache.rules")
     reg.ensure_loaded("webconf_audit.local.lighttpd.rules")
     reg.ensure_loaded("webconf_audit.local.iis.rules")
-    # Meta-only rules (external) register on module import.
-    import webconf_audit.external.rules._runner  # noqa: F401
-
-    for meta in webconf_audit.external.rules._runner._EXTERNAL_RULE_METAS:
-        if meta.rule_id not in reg._catalog:
-            reg.register_meta(meta)
+    register_external_rule_metas(reg)
     return reg
 
 
@@ -96,6 +92,20 @@ class TestCategoryCounts:
     def test_external(self, full_reg: RuleRegistry) -> None:
         rules = full_reg.list_rules(category="external")
         assert len(rules) == 69
+
+    def test_external_meta_registration_is_idempotent_after_clear(self) -> None:
+        reg = RuleRegistry()
+        register_external_rule_metas(reg)
+        first_size = reg.catalog_size
+
+        register_external_rule_metas(reg)
+        assert reg.catalog_size == first_size == 69
+
+        reg.clear()
+        register_external_rule_metas(reg)
+
+        assert reg.catalog_size == 69
+        assert reg.get_meta("external.https_not_available") is not None
 
 
 # ---------------------------------------------------------------------------
