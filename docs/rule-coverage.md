@@ -713,7 +713,8 @@ only where the mapping is honest:
 Progress:
 
 - [x] Universal rules (11)
-- [x] Nginx local rules (41) — CWE/OWASP filled; CIS pending Stage 2 step 4
+- [x] Nginx local rules (41) — CWE/OWASP filled; CIS existing-rule reference
+  pass complete
 - [x] Apache local rules (27) — CWE/OWASP filled; CIS pending Stage 2 step 4
 - [x] Lighttpd local rules (15)
 - [x] IIS local rules (20) — CWE/OWASP filled; CIS pending Stage 2 step 4

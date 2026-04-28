@@ -172,7 +172,7 @@ ASVS 5.0.0, CIS NGINX Benchmark 3.0.0, CIS Apache HTTP Server 2.4 Benchmark
 2.3.0, IIS / Windows Server hardening sources, and future standards-aware
 reporting.
 
-Current step: fill the CIS Nginx mapping PR under the `Server Standards
-Planning Pass` guardrail in `docs/standards-roadmap.md`. After review, continue
-with the remaining mapping PRs in order: CIS Apache, then IIS / Windows
-source-of-truth.
+Current step: CIS Nginx mapping — a follow-up mapping PR after the `Server
+Standards Planning Pass` in `docs/standards-roadmap.md`. After review, continue
+with the remaining follow-up mapping PRs in order: CIS Apache, then IIS /
+Windows source-of-truth.

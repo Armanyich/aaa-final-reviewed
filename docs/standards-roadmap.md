@@ -48,9 +48,11 @@ The current project inventory is 183 rules:
 
 Stage 2 step 3 is complete for CWE and OWASP Top 10 mapping. Confirmed direct
 and partial ASVS candidates are now copied into the dedicated `ASVS` column in
-`docs/rule-coverage.md`. CIS and vendor-specific section references remain
-pending, and ASVS requirements that need deeper probe/parser coverage or a
-stricter policy interpretation stay in the follow-up gap list.
+`docs/rule-coverage.md`. CIS NGINX existing-rule references and the
+Nginx-specific gap table are recorded in `docs/rule-coverage.md`; CIS Apache,
+IIS / Windows, and vendor-specific references remain pending. ASVS requirements
+that need deeper probe/parser coverage or a stricter policy interpretation stay
+in the follow-up gap list.
 
 ## Mapping Rules
 
