@@ -28,7 +28,7 @@ Sources checked on 2026-04-28:
   2025, 2022, 2019, 2016, and older versions. These are relevant to
   IIS-adjacent host policy, especially TLS and service hardening.
 - [CIS Microsoft IIS Benchmark](https://www.cisecurity.org/benchmark/microsoft_iis):
-  the public CIS Microsoft IIS page lists Microsoft IIS 10 Benchmark 1.2.1
+  the public CIS Microsoft IIS page lists Microsoft IIS 10 Benchmark v1.2.1
   among the current available Benchmark PDF versions. Treat it as the primary
   CIS source for IIS-specific hardening, with Windows Server benchmarks used
   for host and SChannel policy.
@@ -48,11 +48,10 @@ The current project inventory is 183 rules:
 
 Stage 2 step 3 is complete for CWE and OWASP Top 10 mapping. Confirmed direct
 and partial ASVS candidates are now copied into the dedicated `ASVS` column in
-`docs/rule-coverage.md`. CIS NGINX and CIS Apache existing-rule references plus
-their server-specific gap tables are recorded in `docs/rule-coverage.md`; IIS /
-Windows and vendor-specific references remain pending. ASVS requirements that
-need deeper probe/parser coverage or a stricter policy interpretation stay in
-the follow-up gap list.
+`docs/rule-coverage.md`. CIS NGINX, CIS Apache, and CIS Microsoft IIS 10
+existing-rule references plus their server-specific gap tables are recorded in
+`docs/rule-coverage.md`. ASVS requirements that need deeper probe/parser
+coverage or a stricter policy interpretation stay in the follow-up gap list.
 
 ## Mapping Rules
 
@@ -115,10 +114,9 @@ Use these labels in follow-up PRs:
    table.
 3. Walk CIS Apache HTTP Server 2.4 Benchmark v2.3.0 and fill Apache CIS matches
    plus an Apache gap table.
-4. Decide the IIS source of truth: active CIS Microsoft IIS 10 Benchmark 1.2.1
-   for IIS policy, active CIS Windows Server Benchmarks for host/SChannel
-   policy, vendor IIS documentation for implementation detail, and legacy
-   unsupported CIS IIS only when explicitly called out.
+4. Walk CIS Microsoft IIS 10 Benchmark v1.2.1 and record the IIS XML,
+   SChannel, host-policy, vendor-doc, and legacy-source split in
+   `docs/rule-coverage.md`.
 5. Add standards metadata to rule definitions only after the doc mapping is
    stable enough to avoid churn in CLI output.
 6. Implement new rules in small PRs. If a candidate needs parser or probe
@@ -178,14 +176,29 @@ Planning output for CIS Apache HTTP Server 2.4 Benchmark v2.3.0:
 
 Planning output for IIS / Windows Server:
 
-- treat active CIS Microsoft IIS 10 Benchmark 1.2.1 as the primary source for
+- treat active CIS Microsoft IIS 10 Benchmark v1.2.1 as the primary source for
   IIS XML and IIS feature policy;
-- treat active CIS Microsoft Windows Server Benchmarks as the source family for
-  host and SChannel policy, including TLS protocol/cipher settings outside XML;
+- treat the CIS Microsoft IIS 10 Benchmark v1.2.1 transport-encryption chapter
+  as the source for the current SChannel registry mappings because it contains
+  the IIS-focused SSL/TLS protocol and cipher controls used by the scanner;
+- treat active CIS Microsoft Windows Server Benchmarks as the future source
+  family for broader host policy that is not covered by IIS XML or the IIS 10
+  transport-encryption chapter;
 - use Microsoft documentation for implementation details when CIS wording is
   too broad for a scanner signal;
 - treat unsupported or archived CIS IIS documents as historical context only,
   not primary compliance references, unless a future PR explicitly scopes them.
+
+Mapping output for IIS / Windows Server:
+
+- `docs/rule-coverage.md` now maps existing IIS XML/effective-config rules to
+  CIS Microsoft IIS 10 Benchmark v1.2.1 where the signal is direct or honestly
+  partial.
+- Universal TLS rules backed by IIS SChannel registry enrichment are documented
+  in an IIS/SChannel mini-table instead of being mixed into the IIS XML rule
+  rows.
+- Legacy CIS IIS 7/8 archive PDFs are explicitly research-only historical
+  context.
 
 The combined planning PR is complete when it records the follow-up PR order and
 the expected artifact for each family:
@@ -194,7 +207,7 @@ the expected artifact for each family:
 | --- | --- | --- |
 | CIS Nginx mapping | Nginx CIS references plus a Nginx-specific gap table | No new rules |
 | CIS Apache mapping | Apache CIS references plus an Apache-specific gap table | No new rules |
-| IIS / Windows mapping | IIS XML, Windows/SChannel, Microsoft docs, and legacy-CIS source split | No new rules |
+| IIS / Windows mapping | IIS XML references, IIS/SChannel universal mappings, and legacy-CIS source split | No new rules |
 
 `No new rules` means no adding or removing rule IDs and no changes to rule
 behavior or signal detection. Updating standards references for existing
@@ -337,9 +350,9 @@ standard section before implementation.
 | STD-GAP-005 | Apache CIS | covered | P1 | Existing-rule CIS references and the Apache-specific gap table are recorded in `docs/rule-coverage.md` from the CIS Apache HTTP Server 2.4 Benchmark v2.3.0 walk. |
 | STD-GAP-006 | Apache CIS | direct-rule | P2 | Add follow-up Apache rules for benchmark items that current parser data can support, such as full `AllowOverride None` validation, method restrictions, denied sensitive file patterns, security-header presence/value checks, `FileETag`, timeout/keepalive values, request-limit thresholds, and Apache TLS directives. |
 | STD-GAP-007 | Apache CIS | parser-depth | P2 | Improve module inventory, proxy/TLS directive modeling, and effective access-control semantics before adding rules that reason about loaded modules, upstream TLS trust, ModSecurity/CRS, or broad `Require` policy. |
-| STD-GAP-008 | IIS / Windows Server | covered | P1 | Map existing IIS and universal TLS/SChannel registry checks to active Windows Server or Microsoft hardening references where the requirement is host policy rather than IIS XML. |
-| STD-GAP-009 | IIS / vendor docs | direct-rule | P2 | Validate additional IIS XML checks around request filtering deny lists, handler exposure, authentication defaults, and response-header behavior against current Microsoft documentation. |
-| STD-GAP-010 | IIS legacy CIS | research | P3 | Decide whether unsupported CIS IIS 7/8 documents should be used only as historical notes, not as primary compliance references. |
+| STD-GAP-008 | IIS / Windows Server | covered | P1 | Existing IIS rule CIS references and IIS/SChannel universal mappings are recorded in `docs/rule-coverage.md` from the CIS Microsoft IIS 10 Benchmark v1.2.1 walk. Broader Windows Server host policy remains `host-depth`. |
+| STD-GAP-009 | IIS / vendor docs | direct-rule | P2 | Add follow-up IIS XML checks for host headers, application pools, authorization defaults, cookie protection, credential storage, request-filtering limits/deny lists, MachineKey/trust settings, handler exposure, and response-header behavior. |
+| STD-GAP-010 | IIS legacy CIS | research | P3 | Source decision recorded: unsupported CIS IIS 7/8 archive PDFs are historical context only and must not be primary references unless a future PR explicitly scopes legacy IIS. |
 | STD-GAP-011 | External probes | covered | P1 | First-pass ASVS references are copied into the dedicated `ASVS` column for observable runtime behavior: TLS protocol negotiation, weak cipher negotiation, certificate validity, security headers, dangerous methods, and exposed sensitive files. Deeper probe work remains in `STD-GAP-014`. |
 | STD-GAP-012 | Standards output | direct-rule | P2 | After references stabilize, add optional report grouping by standard (`--group-by standard` or JSON `standards`) without changing rule behavior. |
 | STD-GAP-013 | ASVS 5.0.0 | direct-rule | P2 | Add CSP quality probes for `frame-ancestors`, `object-src`, `base-uri`, and reporting directives after deciding the desired strictness. |
