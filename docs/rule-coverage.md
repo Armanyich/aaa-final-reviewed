@@ -21,6 +21,12 @@ and is the source of truth for tooling. The tables here are kept in sync with
 that output and may include hand-curated columns (CWE, OWASP, CIS) that the
 CLI does not own.
 
+A pytest sync check (`tests/test_rule_coverage_doc.py`) runs in CI and fails
+if a registered rule is missing from this document, if the document mentions
+an unknown rule, or if the `Total rules` / per-group `Count` numbers drift
+from the registry. PRs that change the rule registry must also update this
+file.
+
 ## Summary
 
 Total rules: **183**
