@@ -127,9 +127,10 @@ Use these labels in follow-up PRs:
 The CIS Nginx, CIS Apache, and IIS / Windows source-of-truth work can share one
 short planning PR because all three are standards triage, not rule
 implementation. That PR must not populate `docs/rule-coverage.md` with final
-CIS references unless the exact section mapping has already been verified in
-the source document. Its job is to make the later mapping PRs boring: clear
-inputs, clear gap labels, and no hidden standards assumptions.
+CIS references. Final section identifiers and verified mappings are reserved
+for the follow-up server-family mapping PRs after the planning pass. The
+planning PR's job is to make those later mapping PRs boring: clear inputs,
+clear gap labels, and no hidden standards assumptions.
 
 The planning-pass portion of a PR must stay documentation-only: it must not
 change the rule registry, add or remove rule IDs, modify rule behavior, or
