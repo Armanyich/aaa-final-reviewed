@@ -2831,6 +2831,31 @@ def test_analyze_nginx_config_ignores_high_client_body_timeout_inside_location(
     )
 
 
+def test_analyze_nginx_config_ignores_high_client_header_timeout_inside_location(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n"
+        "    listen 80;\n"
+        "    client_header_timeout 10s;\n"
+        "    location /api {\n"
+        "        client_header_timeout 300s;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert not any(
+        finding.rule_id == "nginx.client_header_timeout_too_high"
+        for finding in result.findings
+    )
+
+
 def test_analyze_nginx_config_reports_high_keepalive_timeout_inside_location(
     tmp_path: Path,
 ) -> None:
