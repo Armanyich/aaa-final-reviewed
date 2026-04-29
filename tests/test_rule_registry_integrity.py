@@ -13,6 +13,7 @@ import pkgutil
 import pytest
 
 import webconf_audit.local.iis.rules as iis_rules_package
+import webconf_audit.external.rules._runner as external_runner
 from webconf_audit.external.rules._runner import register_external_rule_metas
 from webconf_audit.rule_registry import RuleRegistry
 
@@ -106,6 +107,20 @@ class TestCategoryCounts:
 
         assert reg.catalog_size == 69
         assert reg.get_meta("external.https_not_available") is not None
+
+    def test_external_meta_registration_rejects_duplicate_seed_ids(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        first_meta = external_runner._EXTERNAL_RULE_METAS[0]
+        monkeypatch.setattr(
+            external_runner,
+            "_EXTERNAL_RULE_METAS",
+            [first_meta, first_meta],
+        )
+
+        with pytest.raises(ValueError, match="Duplicate external rule_id"):
+            register_external_rule_metas(RuleRegistry())
 
 
 # ---------------------------------------------------------------------------

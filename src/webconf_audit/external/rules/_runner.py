@@ -111,7 +111,13 @@ _EXTERNAL_RULE_METAS = [
 def register_external_rule_metas(target_registry: RuleRegistry | None = None) -> None:
     """Register metadata-only external rules into the target registry."""
     active_registry = target_registry or registry
+    seen_rule_ids: set[str] = set()
     for meta in _EXTERNAL_RULE_METAS:
+        if meta.rule_id in seen_rule_ids:
+            raise ValueError(
+                f"Duplicate external rule_id in _EXTERNAL_RULE_METAS: {meta.rule_id!r}"
+            )
+        seen_rule_ids.add(meta.rule_id)
         if active_registry.get_meta(meta.rule_id) is None:
             active_registry.register_meta(meta)
 

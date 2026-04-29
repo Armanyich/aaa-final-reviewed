@@ -24,6 +24,8 @@ def cwe(
     coverage: StandardCoverage = "direct",
     note: str | None = None,
 ) -> StandardReference:
+    if isinstance(cwe_id, bool) or not isinstance(cwe_id, int) or cwe_id < 1:
+        raise ValueError(f"Unsupported CWE id: {cwe_id}. Expected a positive integer.")
     return StandardReference(
         standard="CWE",
         reference=f"CWE-{cwe_id}",
@@ -60,9 +62,12 @@ def asvs_5(
     coverage: StandardCoverage = "direct",
     note: str | None = None,
 ) -> StandardReference:
+    normalized_requirement = requirement.strip()
+    if not normalized_requirement:
+        raise ValueError("asvs_5: requirement must be a non-empty string.")
     return StandardReference(
         standard="OWASP ASVS",
-        reference=f"v5.0.0-{requirement}",
+        reference=f"v5.0.0-{normalized_requirement}",
         url="https://owasp.org/www-project-application-security-verification-standard/",
         coverage=coverage,
         note=note,
