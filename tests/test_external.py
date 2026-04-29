@@ -53,7 +53,9 @@ _ALL_SECURITY_HEADERS = {
     "strict_transport_security_header": "max-age=31536000; includeSubDomains",
     "x_frame_options_header": "DENY",
     "x_content_type_options_header": "nosniff",
-    "content_security_policy_header": "default-src 'self'; frame-ancestors 'self'",
+    "content_security_policy_header": (
+        "default-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'none'"
+    ),
     "referrer_policy_header": "strict-origin-when-cross-origin",
     "permissions_policy_header": "geolocation=()",
     "cross_origin_embedder_policy_header": "require-corp",
@@ -1459,6 +1461,206 @@ def test_content_security_policy_missing_does_not_also_fire_frame_ancestors(
     assert "external.content_security_policy_missing_frame_ancestors" not in {
         f.rule_id for f in result.findings
     }
+
+
+def test_content_security_policy_object_src_not_none_fires_when_not_restricted(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'self'; frame-ancestors 'self'; base-uri 'none'"
+            )
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    rule_ids = {f.rule_id for f in result.findings}
+    assert "external.content_security_policy_object_src_not_none" in rule_ids
+    finding = next(
+        f
+        for f in result.findings
+        if f.rule_id == "external.content_security_policy_object_src_not_none"
+    )
+    assert finding.severity == "low"
+    assert finding.location.details is not None
+    assert "Content-Security-Policy:" in finding.location.details
+
+
+def test_content_security_policy_object_src_not_none_accepts_explicit_none(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'self'; frame-ancestors 'self'; "
+                "object-src 'none'; base-uri 'none'"
+            )
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_object_src_not_none" not in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_object_src_not_none_accepts_default_src_none(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'none'; frame-ancestors 'self'; base-uri 'none'"
+            )
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_object_src_not_none" not in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_empty_object_src_still_fires(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'none'; frame-ancestors 'self'; object-src; base-uri 'none'"
+            )
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_object_src_not_none" in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_object_src_not_none_does_not_fire_on_http(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _http_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'self'; frame-ancestors 'self'; base-uri 'none'"
+            )
+        ),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_object_src_not_none" not in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_base_uri_not_restricted_fires_when_missing(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'self'; frame-ancestors 'self'; object-src 'none'"
+            )
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    rule_ids = {f.rule_id for f in result.findings}
+    assert "external.content_security_policy_base_uri_not_restricted" in rule_ids
+    finding = next(
+        f
+        for f in result.findings
+        if f.rule_id == "external.content_security_policy_base_uri_not_restricted"
+    )
+    assert finding.severity == "low"
+    assert finding.location.details is not None
+    assert "Content-Security-Policy:" in finding.location.details
+
+
+def test_content_security_policy_base_uri_not_restricted_accepts_none(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'self'; frame-ancestors 'self'; "
+                "object-src 'none'; base-uri 'none'"
+            )
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_base_uri_not_restricted" not in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_base_uri_not_restricted_accepts_self(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'self'; frame-ancestors 'self'; "
+                "object-src 'none'; base-uri 'self'"
+            )
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_base_uri_not_restricted" not in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_empty_base_uri_still_fires(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'self'; frame-ancestors 'self'; "
+                "object-src 'none'; base-uri;"
+            )
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_base_uri_not_restricted" in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_base_uri_not_restricted_does_not_fire_on_http(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _http_probe_with_headers(
+            content_security_policy_header=(
+                "default-src 'self'; frame-ancestors 'self'; object-src 'none'"
+            )
+        ),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_base_uri_not_restricted" not in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_missing_does_not_fire_minimum_quality_rules(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(content_security_policy_header=None),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    rule_ids = {f.rule_id for f in result.findings}
+    assert "external.content_security_policy_missing" in rule_ids
+    assert "external.content_security_policy_object_src_not_none" not in rule_ids
+    assert "external.content_security_policy_base_uri_not_restricted" not in rule_ids
 
 
 def test_referrer_policy_missing_fires_when_header_absent(monkeypatch) -> None:

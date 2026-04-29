@@ -166,6 +166,21 @@ def _content_security_policy_directives(header_value: str) -> dict[str, str]:
     return directives
 
 
+def _content_security_policy_source_tokens(source_list: str | None) -> set[str]:
+    if source_list is None:
+        return set()
+    return {token.lower() for token in source_list.split() if token.strip()}
+
+
+def _content_security_policy_source_list_is_none(source_list: str | None) -> bool:
+    return _content_security_policy_source_tokens(source_list) == {"'none'"}
+
+
+def _content_security_policy_base_uri_is_restricted(source_list: str | None) -> bool:
+    tokens = _content_security_policy_source_tokens(source_list)
+    return tokens in ({"'none'"}, {"'self'"})
+
+
 def _find_content_security_policy_missing_frame_ancestors(
     probe_attempts: list["ProbeAttempt"],
 ) -> list[Finding]:
@@ -194,6 +209,92 @@ def _find_content_security_policy_missing_frame_ancestors(
                 recommendation=(
                     "Add a frame-ancestors directive such as 'none' or 'self' "
                     "to the Content-Security-Policy."
+                ),
+                location=SourceLocation(
+                    mode="external",
+                    kind="header",
+                    target=attempt.target.url,
+                    details=f"Content-Security-Policy: {attempt.content_security_policy_header}",
+                ),
+            )
+        )
+
+    return findings
+
+
+def _find_content_security_policy_object_src_not_none(
+    probe_attempts: list["ProbeAttempt"],
+) -> list[Finding]:
+    findings: list[Finding] = []
+
+    for attempt in _successful_attempts_for_scheme(probe_attempts, "https"):
+        if attempt.content_security_policy_header is None:
+            continue
+
+        directives = _content_security_policy_directives(
+            attempt.content_security_policy_header
+        )
+        object_src = directives.get("object-src")
+        effective_object_src = (
+            object_src if object_src is not None else directives.get("default-src")
+        )
+        if _content_security_policy_source_list_is_none(effective_object_src):
+            continue
+
+        findings.append(
+            Finding(
+                rule_id="external.content_security_policy_object_src_not_none",
+                title="Content-Security-Policy object-src is not restricted",
+                severity="low",
+                description=(
+                    "HTTPS endpoint returned a Content-Security-Policy header "
+                    "without an effective object-src 'none' policy, so legacy "
+                    "plugin-style embeddings are not explicitly blocked."
+                ),
+                recommendation=(
+                    "Set object-src 'none' in the Content-Security-Policy, or "
+                    "use default-src 'none' when object-src is omitted."
+                ),
+                location=SourceLocation(
+                    mode="external",
+                    kind="header",
+                    target=attempt.target.url,
+                    details=f"Content-Security-Policy: {attempt.content_security_policy_header}",
+                ),
+            )
+        )
+
+    return findings
+
+
+def _find_content_security_policy_base_uri_not_restricted(
+    probe_attempts: list["ProbeAttempt"],
+) -> list[Finding]:
+    findings: list[Finding] = []
+
+    for attempt in _successful_attempts_for_scheme(probe_attempts, "https"):
+        if attempt.content_security_policy_header is None:
+            continue
+
+        base_uri = _content_security_policy_directives(
+            attempt.content_security_policy_header
+        ).get("base-uri")
+        if _content_security_policy_base_uri_is_restricted(base_uri):
+            continue
+
+        findings.append(
+            Finding(
+                rule_id="external.content_security_policy_base_uri_not_restricted",
+                title="Content-Security-Policy base-uri is not restricted",
+                severity="low",
+                description=(
+                    "HTTPS endpoint returned a Content-Security-Policy header "
+                    "without a restricted base-uri directive, so injected base "
+                    "elements may alter relative URL resolution."
+                ),
+                recommendation=(
+                    "Set base-uri 'none' or base-uri 'self' in the "
+                    "Content-Security-Policy."
                 ),
                 location=SourceLocation(
                     mode="external",
@@ -478,6 +579,8 @@ def collect_header_findings(probe_attempts: list["ProbeAttempt"]) -> list[Findin
     findings.extend(_find_x_content_type_options_invalid(probe_attempts))
     findings.extend(_find_content_security_policy_missing(probe_attempts))
     findings.extend(_find_content_security_policy_missing_frame_ancestors(probe_attempts))
+    findings.extend(_find_content_security_policy_object_src_not_none(probe_attempts))
+    findings.extend(_find_content_security_policy_base_uri_not_restricted(probe_attempts))
     findings.extend(_find_content_security_policy_unsafe_inline(probe_attempts))
     findings.extend(_find_content_security_policy_unsafe_eval(probe_attempts))
     findings.extend(_find_referrer_policy_missing(probe_attempts))
