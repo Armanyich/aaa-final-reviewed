@@ -28,7 +28,7 @@ def find_keepalive_timeout_too_high(config_ast: ConfigAst) -> list[Finding]:
     for directive, _parent in iter_direct_child_directives(
         config_ast,
         "keepalive_timeout",
-        block_names={"http", "server"},
+        block_names={"http", "server", "location"},
     ):
         if not directive.args:
             continue

@@ -2842,6 +2842,56 @@ def test_analyze_nginx_config_ignores_high_client_body_timeout_inside_location(
     )
 
 
+def test_analyze_nginx_config_reports_high_keepalive_timeout_inside_location(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n"
+        "    listen 80;\n"
+        "    keepalive_timeout 10s;\n"
+        "    location /api {\n"
+        "        keepalive_timeout 120s;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert any(
+        finding.rule_id == "nginx.keepalive_timeout_too_high"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_reports_high_send_timeout_inside_location(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n"
+        "    listen 80;\n"
+        "    send_timeout 10s;\n"
+        "    location /stream {\n"
+        "        send_timeout 300s;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert any(
+        finding.rule_id == "nginx.send_timeout_too_high"
+        for finding in result.findings
+    )
+
+
 def test_analyze_nginx_config_reports_unlimited_client_max_body_size(
     tmp_path: Path,
 ) -> None:
