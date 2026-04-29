@@ -9,6 +9,7 @@ and gives full control over expected counts and rule_ids.
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
 
 import pytest
 
@@ -16,6 +17,7 @@ from webconf_audit.rule_registry import (
     RuleEntry,
     RuleMeta,
     RuleRegistry,
+    StandardReference,
     rule,
     registry as global_registry,
 )
@@ -101,9 +103,21 @@ class TestRuleMeta:
         meta = _meta()
         assert meta.tags == ()
         assert meta.condition is None
+        assert meta.standards == ()
         assert meta.order == 1000
         assert meta.input_kind == "ast"
         assert meta.server_type is None
+
+    def test_standards_metadata(self):
+        ref = StandardReference(
+            standard="CWE",
+            reference="CWE-327",
+            url="https://cwe.mitre.org/data/definitions/327.html",
+        )
+        meta = replace(_meta(rule_id="x.standard"), standards=(ref,))
+
+        assert meta.standards == (ref,)
+        assert meta.standards[0].coverage == "direct"
 
     def test_equality(self):
         a = _meta(rule_id="x.a")

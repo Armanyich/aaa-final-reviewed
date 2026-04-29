@@ -23,6 +23,11 @@ class OutputFormat(str, Enum):
     json = "json"
 
 
+class GroupBy(str, Enum):
+    severity = "severity"
+    standard = "standard"
+
+
 class FailOnSeverity(str, Enum):
     info = "info"
     low = "low"
@@ -72,6 +77,14 @@ def _fail_on_new_option() -> FailOnSeverity | None:
     )
 
 
+def _group_by_option() -> GroupBy:
+    return typer.Option(
+        GroupBy.severity,
+        "--group-by",
+        help="Text report grouping: severity or standard.",
+    )
+
+
 def _output_result(
     result: AnalysisResult,
     fmt: OutputFormat = OutputFormat.text,
@@ -80,7 +93,9 @@ def _output_result(
     baseline_path: str | None = None,
     write_baseline_path: str | None = None,
     fail_on_new: FailOnSeverity | None = None,
+    group_by: GroupBy = GroupBy.severity,
 ) -> None:
+    _ensure_all_rules_loaded()
     suppression_load_failed = _apply_suppressions(
         result,
         suppressions_path,
@@ -93,7 +108,11 @@ def _output_result(
         if issue is not None:
             result.issues.append(issue)
             baseline_operation_failed = True
-    formatter = TextFormatter() if fmt == OutputFormat.text else JsonFormatter()
+    formatter = (
+        TextFormatter(group_by=group_by.value)
+        if fmt == OutputFormat.text
+        else JsonFormatter()
+    )
     typer.echo(formatter.format(report))
     exit_code = _ci_exit_code(
         result,
@@ -217,6 +236,7 @@ def analyze_nginx(
     baseline: str | None = _baseline_option(),
     write_baseline: str | None = _write_baseline_option(),
     fail_on_new: FailOnSeverity | None = _fail_on_new_option(),
+    group_by: GroupBy = _group_by_option(),
 ) -> None:
     result = analyze_nginx_config(config_path)
     _output_result(
@@ -227,6 +247,7 @@ def analyze_nginx(
         baseline,
         write_baseline,
         fail_on_new,
+        group_by,
     )
 
 
@@ -245,6 +266,7 @@ def analyze_apache(
     baseline: str | None = _baseline_option(),
     write_baseline: str | None = _write_baseline_option(),
     fail_on_new: FailOnSeverity | None = _fail_on_new_option(),
+    group_by: GroupBy = _group_by_option(),
 ) -> None:
     result = analyze_apache_config(config_path)
     _output_result(
@@ -255,6 +277,7 @@ def analyze_apache(
         baseline,
         write_baseline,
         fail_on_new,
+        group_by,
     )
 
 
@@ -283,6 +306,7 @@ def analyze_lighttpd(
     baseline: str | None = _baseline_option(),
     write_baseline: str | None = _write_baseline_option(),
     fail_on_new: FailOnSeverity | None = _fail_on_new_option(),
+    group_by: GroupBy = _group_by_option(),
 ) -> None:
     result = analyze_lighttpd_config(
         config_path, execute_shell=execute_shell, host=host,
@@ -295,6 +319,7 @@ def analyze_lighttpd(
         baseline,
         write_baseline,
         fail_on_new,
+        group_by,
     )
 
 
@@ -331,6 +356,7 @@ def analyze_iis(
     baseline: str | None = _baseline_option(),
     write_baseline: str | None = _write_baseline_option(),
     fail_on_new: FailOnSeverity | None = _fail_on_new_option(),
+    group_by: GroupBy = _group_by_option(),
 ) -> None:
     kwargs: dict[str, object] = {}
     if machine_config is not None:
@@ -349,6 +375,7 @@ def analyze_iis(
         baseline,
         write_baseline,
         fail_on_new,
+        group_by,
     )
 
 
@@ -407,6 +434,7 @@ def analyze_external(
     baseline: str | None = _baseline_option(),
     write_baseline: str | None = _write_baseline_option(),
     fail_on_new: FailOnSeverity | None = _fail_on_new_option(),
+    group_by: GroupBy = _group_by_option(),
 ) -> None:
     parsed_ports: tuple[int, ...] | None = None
     if ports is not None:
@@ -420,6 +448,7 @@ def analyze_external(
         baseline,
         write_baseline,
         fail_on_new,
+        group_by,
     )
 
 
@@ -493,6 +522,20 @@ def _rule_meta_payload(meta: RuleMeta) -> dict[str, object]:
         "server_type": meta.server_type,
         "input_kind": meta.input_kind,
         "tags": list(meta.tags),
+        "standards": [
+            {
+                key: value
+                for key, value in {
+                    "standard": ref.standard,
+                    "reference": ref.reference,
+                    "url": ref.url,
+                    "coverage": ref.coverage,
+                    "note": ref.note,
+                }.items()
+                if value is not None
+            }
+            for ref in meta.standards
+        ],
         "condition": meta.condition,
         "order": meta.order,
     }
@@ -569,14 +612,14 @@ def _available_rule_tags() -> set[str]:
 def _ensure_all_rules_loaded() -> None:
     """Load all rule packages + meta-only registrations into the registry."""
     from webconf_audit.rule_registry import registry
+    from webconf_audit.external.rules._runner import register_external_rule_metas
 
     registry.ensure_loaded("webconf_audit.local.rules.universal")
     registry.ensure_loaded("webconf_audit.local.nginx.rules")
     registry.ensure_loaded("webconf_audit.local.apache.rules")
     registry.ensure_loaded("webconf_audit.local.lighttpd.rules")
     registry.ensure_loaded("webconf_audit.local.iis.rules")
-    # External meta-only rules register on import.
-    import webconf_audit.external.rules._runner  # noqa: F401
+    register_external_rule_metas()
 
 
 if __name__ == "__main__":

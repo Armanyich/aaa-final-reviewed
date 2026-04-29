@@ -11,6 +11,7 @@ from webconf_audit.models import (
     SourceLocation,
 )
 from webconf_audit.report import JsonFormatter, ReportData, TextFormatter
+from webconf_audit.rule_registry import registry
 from webconf_audit.suppressions import SUPPRESSED_FINDINGS_METADATA_KEY
 
 
@@ -347,6 +348,23 @@ class TestTextFormatter:
         assert "malformed_response_body" in out
         assert "server_header" in out
 
+    def test_can_group_findings_by_standard(self) -> None:
+        r = _result(
+            findings=[
+                _finding(
+                    rule_id="universal.weak_tls_protocol",
+                    severity="medium",
+                    title="Weak TLS/SSL protocols enabled",
+                )
+            ]
+        )
+
+        out = TextFormatter(group_by="standard").format(ReportData(results=[r]))
+
+        assert "=== STANDARD CWE (1) ===" in out
+        assert "refs: CWE-327" in out
+        assert "=== STANDARD OWASP TOP 10 (1) ===" in out
+
 
 # ---------------------------------------------------------------------------
 # 7.1.2  JsonFormatter
@@ -387,7 +405,9 @@ class TestJsonFormatter:
         assert len(findings) == 1
         assert findings[0]["rule_id"] == "x.rule"
         assert len(findings[0]["fingerprint"]) == 64
+        assert findings[0]["standards"] == []
         assert parsed["findings"][0]["fingerprint"] == findings[0]["fingerprint"]
+        assert parsed["findings"][0]["standards"] == []
 
     def test_json_empty_report(self) -> None:
         out = JsonFormatter().format(ReportData(results=[]))
@@ -486,6 +506,47 @@ class TestJsonFormatter:
         assert parsed["resolved_findings"] == [
             {"rule_id": "x.fixed", "fingerprint": "3" * 64}
         ]
+
+    def test_json_findings_include_standards_metadata(self) -> None:
+        r = _result(
+            findings=[
+                _finding(
+                    rule_id="universal.weak_tls_protocol",
+                    severity="medium",
+                    title="Weak TLS/SSL protocols enabled",
+                )
+            ]
+        )
+
+        parsed = json.loads(JsonFormatter().format(ReportData(results=[r])))
+
+        finding = parsed["findings"][0]
+        assert {
+            "standard": "CWE",
+            "reference": "CWE-327",
+            "url": "https://cwe.mitre.org/data/definitions/327.html",
+            "coverage": "direct",
+        } in finding["standards"]
+        assert {
+            "standard": "CWE",
+            "reference": "CWE-327",
+            "url": "https://cwe.mitre.org/data/definitions/327.html",
+            "coverage": "direct",
+            "finding_count": 1,
+            "rule_ids": ["universal.weak_tls_protocol"],
+        } in parsed["standards"]
+
+    def test_json_formatter_reloads_external_metadata_after_registry_clear(self) -> None:
+        registry.clear()
+        assert registry.get_meta("external.https_not_available") is None
+
+        JsonFormatter().format(
+            ReportData(
+                results=[_result(findings=[_finding(rule_id="external.https_not_available")])]
+            )
+        )
+
+        assert registry.get_meta("external.https_not_available") is not None
 
     def test_json_uses_baseline_diff_suppressed_findings_when_available(self) -> None:
         r = _result()

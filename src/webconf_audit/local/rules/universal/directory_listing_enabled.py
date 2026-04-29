@@ -8,6 +8,7 @@ from __future__ import annotations
 from webconf_audit.local.normalized import NormalizedConfig
 from webconf_audit.models import Finding, SourceLocation
 from webconf_audit.rule_registry import rule
+from webconf_audit.standards import asvs_5, cwe, owasp_top10_2021
 
 RULE_ID = "universal.directory_listing_enabled"
 
@@ -21,6 +22,11 @@ RULE_ID = "universal.directory_listing_enabled"
     category="universal",
     input_kind="normalized",
     tags=("access",),
+    standards=(
+        cwe(548),
+        owasp_top10_2021("A05:2021"),
+        asvs_5("13.4.3"),
+    ),
     order=108,
 )
 def check(config: NormalizedConfig) -> list[Finding]:
