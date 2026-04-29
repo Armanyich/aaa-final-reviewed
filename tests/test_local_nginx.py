@@ -1,6 +1,8 @@
 import threading
 from pathlib import Path
 
+import pytest
+
 from webconf_audit.local.load_context import LoadContext
 from webconf_audit.local.nginx import analyze_nginx_config
 from webconf_audit.local.nginx.include import resolve_includes
@@ -2733,88 +2735,75 @@ def test_analyze_nginx_config_does_not_report_missing_client_max_body_size_when_
     )
 
 
-def test_analyze_nginx_config_reports_timeout_values_above_cis_limits(
-    tmp_path: Path,
-) -> None:
-    config_path = tmp_path / "nginx.conf"
-    config_path.write_text(
-        "http {\n"
-        "    client_body_timeout 60s;\n"
-        "    client_header_timeout 25s;\n"
-        "    send_timeout 60s;\n"
-        "    keepalive_timeout 65s;\n"
-        "    server {\n"
-        "        listen 80;\n"
-        "    }\n"
-        "}\n",
-        encoding="utf-8",
-    )
-
-    result = analyze_nginx_config(str(config_path))
-
-    assert isinstance(result, AnalysisResult)
-    assert result.issues == []
-    rule_ids = {finding.rule_id for finding in result.findings}
-    assert {
+_TIMEOUT_RULE_IDS = frozenset(
+    {
         "nginx.client_body_timeout_too_high",
         "nginx.client_header_timeout_too_high",
         "nginx.send_timeout_too_high",
         "nginx.keepalive_timeout_too_high",
-    } <= rule_ids
+    }
+)
 
 
-def test_analyze_nginx_config_reports_zero_timeout_values(
+@pytest.mark.parametrize(
+    ("config", "expected_present", "expected_absent"),
+    [
+        pytest.param(
+            "http {\n"
+            "    client_body_timeout 60s;\n"
+            "    client_header_timeout 25s;\n"
+            "    send_timeout 60s;\n"
+            "    keepalive_timeout 65s;\n"
+            "    server {\n"
+            "        listen 80;\n"
+            "    }\n"
+            "}\n",
+            _TIMEOUT_RULE_IDS,
+            frozenset(),
+            id="above-cis-limits-in-http",
+        ),
+        pytest.param(
+            "server {\n"
+            "    listen 80;\n"
+            "    client_body_timeout 0;\n"
+            "    client_header_timeout 0s;\n"
+            "    send_timeout 0;\n"
+            "    keepalive_timeout 0;\n"
+            "}\n",
+            _TIMEOUT_RULE_IDS,
+            frozenset(),
+            id="zero-values-in-server",
+        ),
+        pytest.param(
+            "server {\n"
+            "    listen 80;\n"
+            "    client_body_timeout 20s;\n"
+            "    client_header_timeout 20s;\n"
+            "    send_timeout 10s;\n"
+            "    keepalive_timeout 10s;\n"
+            "}\n",
+            frozenset(),
+            _TIMEOUT_RULE_IDS,
+            id="at-cis-limits-in-server",
+        ),
+    ],
+)
+def test_analyze_nginx_config_timeout_value_matrix(
     tmp_path: Path,
+    config: str,
+    expected_present: frozenset[str],
+    expected_absent: frozenset[str],
 ) -> None:
     config_path = tmp_path / "nginx.conf"
-    config_path.write_text(
-        "server {\n"
-        "    listen 80;\n"
-        "    client_body_timeout 0;\n"
-        "    client_header_timeout 0s;\n"
-        "    send_timeout 0;\n"
-        "    keepalive_timeout 0;\n"
-        "}\n",
-        encoding="utf-8",
-    )
+    config_path.write_text(config, encoding="utf-8")
 
     result = analyze_nginx_config(str(config_path))
 
     assert isinstance(result, AnalysisResult)
     assert result.issues == []
     rule_ids = {finding.rule_id for finding in result.findings}
-    assert {
-        "nginx.client_body_timeout_too_high",
-        "nginx.client_header_timeout_too_high",
-        "nginx.send_timeout_too_high",
-        "nginx.keepalive_timeout_too_high",
-    } <= rule_ids
-
-
-def test_analyze_nginx_config_accepts_timeout_values_within_cis_limits(
-    tmp_path: Path,
-) -> None:
-    config_path = tmp_path / "nginx.conf"
-    config_path.write_text(
-        "server {\n"
-        "    listen 80;\n"
-        "    client_body_timeout 20s;\n"
-        "    client_header_timeout 20s;\n"
-        "    send_timeout 10s;\n"
-        "    keepalive_timeout 10s;\n"
-        "}\n",
-        encoding="utf-8",
-    )
-
-    result = analyze_nginx_config(str(config_path))
-
-    assert isinstance(result, AnalysisResult)
-    assert result.issues == []
-    rule_ids = {finding.rule_id for finding in result.findings}
-    assert "nginx.client_body_timeout_too_high" not in rule_ids
-    assert "nginx.client_header_timeout_too_high" not in rule_ids
-    assert "nginx.send_timeout_too_high" not in rule_ids
-    assert "nginx.keepalive_timeout_too_high" not in rule_ids
+    assert expected_present <= rule_ids
+    assert rule_ids.isdisjoint(expected_absent)
 
 
 def test_analyze_nginx_config_ignores_high_client_body_timeout_inside_location(
