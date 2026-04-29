@@ -153,6 +153,60 @@ def _find_content_security_policy_missing(probe_attempts: list["ProbeAttempt"]) 
     return findings
 
 
+def _content_security_policy_directives(header_value: str) -> dict[str, str]:
+    directives: dict[str, str] = {}
+    for part in header_value.replace(",", ";").split(";"):
+        stripped = part.strip()
+        if not stripped:
+            continue
+        directive_parts = stripped.split(None, 1)
+        directive_name = directive_parts[0].lower()
+        directive_value = directive_parts[1].strip() if len(directive_parts) > 1 else ""
+        directives.setdefault(directive_name, directive_value)
+    return directives
+
+
+def _find_content_security_policy_missing_frame_ancestors(
+    probe_attempts: list["ProbeAttempt"],
+) -> list[Finding]:
+    findings: list[Finding] = []
+
+    for attempt in _successful_attempts_for_scheme(probe_attempts, "https"):
+        if attempt.content_security_policy_header is None:
+            continue
+
+        frame_ancestors = _content_security_policy_directives(
+            attempt.content_security_policy_header
+        ).get("frame-ancestors")
+        if frame_ancestors:
+            continue
+
+        findings.append(
+            Finding(
+                rule_id="external.content_security_policy_missing_frame_ancestors",
+                title="Content-Security-Policy missing frame-ancestors",
+                severity="low",
+                description=(
+                    "HTTPS endpoint returned a Content-Security-Policy header "
+                    "without a frame-ancestors directive, so embedding policy is "
+                    "not controlled by CSP."
+                ),
+                recommendation=(
+                    "Add a frame-ancestors directive such as 'none' or 'self' "
+                    "to the Content-Security-Policy."
+                ),
+                location=SourceLocation(
+                    mode="external",
+                    kind="header",
+                    target=attempt.target.url,
+                    details=f"Content-Security-Policy: {attempt.content_security_policy_header}",
+                ),
+            )
+        )
+
+    return findings
+
+
 def _find_content_security_policy_unsafe_inline(
     probe_attempts: list["ProbeAttempt"],
 ) -> list[Finding]:
@@ -423,6 +477,7 @@ def collect_header_findings(probe_attempts: list["ProbeAttempt"]) -> list[Findin
     findings.extend(_find_x_content_type_options_missing(probe_attempts))
     findings.extend(_find_x_content_type_options_invalid(probe_attempts))
     findings.extend(_find_content_security_policy_missing(probe_attempts))
+    findings.extend(_find_content_security_policy_missing_frame_ancestors(probe_attempts))
     findings.extend(_find_content_security_policy_unsafe_inline(probe_attempts))
     findings.extend(_find_content_security_policy_unsafe_eval(probe_attempts))
     findings.extend(_find_referrer_policy_missing(probe_attempts))

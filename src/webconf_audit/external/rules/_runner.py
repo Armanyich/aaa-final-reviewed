@@ -13,6 +13,7 @@ from webconf_audit.external.rules._sensitive_paths import collect_sensitive_path
 from webconf_audit.external.rules._tls import collect_tls_findings
 from webconf_audit.models import Finding
 from webconf_audit.rule_registry import RuleMeta, RuleRegistry, registry
+from webconf_audit.standards import asvs_5, cwe, owasp_top10_2021
 
 if TYPE_CHECKING:
     from webconf_audit.external.recon import (
@@ -58,12 +59,13 @@ _EXTERNAL_RULE_METAS = [
     RuleMeta(rule_id="external.content_security_policy_missing", title="Content-Security-Policy header missing", severity="medium", description="Content-Security-Policy header missing.", recommendation="Add a Content-Security-Policy header.", category="external", input_kind="probe", order=644),
     RuleMeta(rule_id="external.content_security_policy_unsafe_inline", title="CSP allows unsafe-inline", severity="medium", description="Content-Security-Policy allows unsafe-inline.", recommendation="Remove unsafe-inline from CSP.", category="external", input_kind="probe", order=645),
     RuleMeta(rule_id="external.content_security_policy_unsafe_eval", title="CSP allows unsafe-eval", severity="medium", description="Content-Security-Policy allows unsafe-eval.", recommendation="Remove unsafe-eval from CSP.", category="external", input_kind="probe", order=646),
-    RuleMeta(rule_id="external.referrer_policy_missing", title="Referrer-Policy header missing", severity="info", description="Referrer-Policy header missing.", recommendation="Add a Referrer-Policy header.", category="external", input_kind="probe", order=647),
-    RuleMeta(rule_id="external.referrer_policy_unsafe", title="Unsafe Referrer-Policy value", severity="low", description="Unsafe Referrer-Policy value.", recommendation="Use a restrictive Referrer-Policy.", category="external", input_kind="probe", order=648),
-    RuleMeta(rule_id="external.permissions_policy_missing", title="Permissions-Policy header missing", severity="info", description="Permissions-Policy header missing.", recommendation="Add a Permissions-Policy header.", category="external", input_kind="probe", order=649),
-    RuleMeta(rule_id="external.coep_missing", title="Cross-Origin-Embedder-Policy header missing", severity="info", description="Cross-Origin-Embedder-Policy header missing.", recommendation="Add a COEP header.", category="external", input_kind="probe", order=650),
-    RuleMeta(rule_id="external.coop_missing", title="Cross-Origin-Opener-Policy header missing", severity="info", description="Cross-Origin-Opener-Policy header missing.", recommendation="Add a COOP header.", category="external", input_kind="probe", order=651),
-    RuleMeta(rule_id="external.corp_missing", title="Cross-Origin-Resource-Policy header missing", severity="info", description="Cross-Origin-Resource-Policy header missing.", recommendation="Add a CORP header.", category="external", input_kind="probe", order=652),
+    RuleMeta(rule_id="external.content_security_policy_missing_frame_ancestors", title="CSP missing frame-ancestors", severity="low", description="Content-Security-Policy missing frame-ancestors directive.", recommendation="Add frame-ancestors to CSP.", category="external", input_kind="probe", standards=(cwe(1021), owasp_top10_2021("A05:2021"), asvs_5("3.4.6")), order=647),
+    RuleMeta(rule_id="external.referrer_policy_missing", title="Referrer-Policy header missing", severity="info", description="Referrer-Policy header missing.", recommendation="Add a Referrer-Policy header.", category="external", input_kind="probe", order=648),
+    RuleMeta(rule_id="external.referrer_policy_unsafe", title="Unsafe Referrer-Policy value", severity="low", description="Unsafe Referrer-Policy value.", recommendation="Use a restrictive Referrer-Policy.", category="external", input_kind="probe", order=649),
+    RuleMeta(rule_id="external.permissions_policy_missing", title="Permissions-Policy header missing", severity="info", description="Permissions-Policy header missing.", recommendation="Add a Permissions-Policy header.", category="external", input_kind="probe", order=650),
+    RuleMeta(rule_id="external.coep_missing", title="Cross-Origin-Embedder-Policy header missing", severity="info", description="Cross-Origin-Embedder-Policy header missing.", recommendation="Add a COEP header.", category="external", input_kind="probe", order=651),
+    RuleMeta(rule_id="external.coop_missing", title="Cross-Origin-Opener-Policy header missing", severity="info", description="Cross-Origin-Opener-Policy header missing.", recommendation="Add a COOP header.", category="external", input_kind="probe", order=652),
+    RuleMeta(rule_id="external.corp_missing", title="Cross-Origin-Resource-Policy header missing", severity="info", description="Cross-Origin-Resource-Policy header missing.", recommendation="Add a CORP header.", category="external", input_kind="probe", order=653),
     # -- _https.py --
     RuleMeta(rule_id="external.https_not_available", title="HTTPS not available", severity="medium", description="HTTPS not available.", recommendation="Enable HTTPS.", category="external", input_kind="probe", order=660),
     RuleMeta(rule_id="external.http_not_redirected_to_https", title="HTTP not redirected to HTTPS", severity="low", description="HTTP not redirected to HTTPS.", recommendation="Redirect HTTP to HTTPS.", category="external", input_kind="probe", order=661),

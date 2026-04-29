@@ -53,7 +53,7 @@ _ALL_SECURITY_HEADERS = {
     "strict_transport_security_header": "max-age=31536000; includeSubDomains",
     "x_frame_options_header": "DENY",
     "x_content_type_options_header": "nosniff",
-    "content_security_policy_header": "default-src 'self'",
+    "content_security_policy_header": "default-src 'self'; frame-ancestors 'self'",
     "referrer_policy_header": "strict-origin-when-cross-origin",
     "permissions_policy_header": "geolocation=()",
     "cross_origin_embedder_policy_header": "require-corp",
@@ -1169,6 +1169,19 @@ def _https_probe_with_headers(**overrides) -> ProbeAttempt:
     return ProbeAttempt(**defaults)
 
 
+def _http_probe_with_headers(**overrides) -> ProbeAttempt:
+    defaults = {
+        "target": ProbeTarget(scheme="http", host="example.com", port=80, path="/"),
+        "tcp_open": True,
+        "status_code": 200,
+        "reason_phrase": "OK",
+        "server_header": "nginx",
+        **_ALL_SECURITY_HEADERS,
+    }
+    defaults.update(overrides)
+    return ProbeAttempt(**defaults)
+
+
 def _http_redirect_probe(
     *,
     target: ProbeTarget | None = None,
@@ -1372,6 +1385,80 @@ def test_content_security_policy_missing_does_not_fire_when_header_present(monke
     probe_attempts = [_https_probe_with_headers(), _http_redirect_probe()]
     result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
     assert "external.content_security_policy_missing" not in {f.rule_id for f in result.findings}
+
+
+def test_content_security_policy_missing_frame_ancestors_fires_when_absent(monkeypatch) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(content_security_policy_header="default-src 'self'"),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    rule_ids = {f.rule_id for f in result.findings}
+    assert "external.content_security_policy_missing_frame_ancestors" in rule_ids
+    finding = next(
+        f
+        for f in result.findings
+        if f.rule_id == "external.content_security_policy_missing_frame_ancestors"
+    )
+    assert finding.severity == "low"
+    assert finding.location.details is not None
+    assert "Content-Security-Policy:" in finding.location.details
+
+
+def test_content_security_policy_frame_ancestors_does_not_fire_on_http(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _http_probe_with_headers(content_security_policy_header="default-src 'self'"),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_missing_frame_ancestors" not in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_frame_ancestors_does_not_fire_when_present(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header="default-src 'self'; Frame-Ancestors 'none'"
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_missing_frame_ancestors" not in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_empty_frame_ancestors_still_fires(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header="default-src 'self'; frame-ancestors;"
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_missing_frame_ancestors" in {
+        f.rule_id for f in result.findings
+    }
+
+
+def test_content_security_policy_missing_does_not_also_fire_frame_ancestors(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(content_security_policy_header=None),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_missing" in {f.rule_id for f in result.findings}
+    assert "external.content_security_policy_missing_frame_ancestors" not in {
+        f.rule_id for f in result.findings
+    }
 
 
 def test_referrer_policy_missing_fires_when_header_absent(monkeypatch) -> None:
