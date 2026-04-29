@@ -29,13 +29,13 @@ file.
 
 ## Summary
 
-Total rules: **186**
+Total rules: **193**
 
 | Dimension | Counts |
 | --- | --- |
-| Category | local (103), external (72), universal (11) |
-| Severity | high (12), medium (61), low (102), info (11) |
-| Input kind | ast (69), probe (72), effective (27), normalized (11), htaccess (6), mixed (1) |
+| Category | local (110), external (72), universal (11) |
+| Severity | high (12), medium (61), low (109), info (11) |
+| Input kind | ast (76), probe (72), effective (27), normalized (11), htaccess (6), mixed (1) |
 
 ## Inventory tables
 
@@ -104,7 +104,7 @@ Mapping rationale (universal rules):
 
 ### Nginx (Local)
 
-Count: 41
+Count: 48
 
 Stage 2 mapping status: **CWE / OWASP complete; CIS existing-rule reference
 pass complete** for this group. CIS references come from a full walk-through
@@ -158,6 +158,13 @@ the benchmark covers but webconf-audit does not.
 | `nginx.ssl_stapling_missing_resolver` | low | ast | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | CIS NGINX v3.0.0 §4.1.7 (partial: resolver presence requirement only) |
 | `nginx.ssl_stapling_without_verify` | low | ast | - | [CWE-295](https://cwe.mitre.org/data/definitions/295.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | - | CIS NGINX v3.0.0 §4.1.7 (partial: stapling verification requirement) |
 | `nginx.weak_ssl_protocols` | medium | ast | - | [CWE-327](https://cwe.mitre.org/data/definitions/327.html) | [A02:2021](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/) | ASVS v5.0.0-12.1.1 | CIS NGINX v3.0.0 §4.1.4 |
+| `nginx.client_body_timeout_too_high` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX v3.0.0 §5.2.1 (partial: validates global/server timeout values; scoped upload-location exceptions remain operator policy) |
+| `nginx.client_header_timeout_too_high` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX v3.0.0 §5.2.1 |
+| `nginx.keepalive_timeout_too_high` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX v3.0.0 §2.4.3 |
+| `nginx.send_timeout_too_high` | low | ast | - | [CWE-400](https://cwe.mitre.org/data/definitions/400.html) | - | - | CIS NGINX v3.0.0 §2.4.4 |
+| `nginx.client_max_body_size_unlimited` | low | ast | - | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | - | - | CIS NGINX v3.0.0 §5.2.2 (partial: detects disabled body-size enforcement, not application-specific maximums) |
+| `nginx.ssl_session_tickets_disabled` | low | ast | - | - | - | - | CIS NGINX v3.0.0 §4.1.11 |
+| `nginx.large_client_header_buffers_too_restrictive` | low | ast | - | - | - | - | CIS NGINX v3.0.0 §5.2.3 (partial: detects values below the default 4 8k; documented lower limits remain operator policy) |
 
 Mapping rationale (nginx rules):
 
@@ -194,10 +201,16 @@ Mapping rationale (nginx rules):
   per-connection timeouts lets slow-loris-style clients hold sockets open
   forever: CWE-400 (uncontrolled resource consumption). OWASP cells empty
   because the 2021 Top 10 has no clean home for DoS hardening.
+- `client_body_timeout_too_high`, `client_header_timeout_too_high`,
+  `keepalive_timeout_too_high`, `send_timeout_too_high` -- overly high
+  timeout values keep slow connections open longer than the CIS hardening
+  guidance recommends: CWE-400. OWASP cells empty for the same DoS-hardening
+  reason.
 - `missing_client_max_body_size`, `missing_limit_conn`, `missing_limit_conn_zone`,
-  `missing_limit_req`, `missing_limit_req_zone` -- no upper bound / rate
-  limit on bodies, connections, or requests: CWE-770 (allocation without
-  limits or throttling). OWASP cells empty for the same reason.
+  `missing_limit_req`, `missing_limit_req_zone`,
+  `client_max_body_size_unlimited` -- no upper bound / rate limit on bodies,
+  connections, or requests: CWE-770 (allocation without limits or throttling).
+  OWASP cells empty for the same reason.
 - `missing_content_security_policy`, `missing_x_content_type_options`,
   `missing_permissions_policy` -- protective response headers; CWE-693
   (protection mechanism failure), OWASP A05.
@@ -228,6 +241,12 @@ Mapping rationale (nginx rules):
   validation is CWE-295 (improper certificate validation), OWASP A02.
 - `weak_ssl_protocols` -- TLSv1.0 / TLSv1.1 / SSLv3 are textbook CWE-327,
   OWASP A02 (matches the universal `weak_tls_protocol` rule).
+- `large_client_header_buffers_too_restrictive` -- values below the
+  Nginx default can reject legitimate request URIs or headers; this is an
+  availability / compatibility hardening signal, so CWE and OWASP stay empty.
+- `ssl_session_tickets_disabled` -- explicitly disabling TLS 1.3 session
+  tickets breaks the CIS session-resumption recommendation, but it is not a
+  weakness class by itself; CWE and OWASP stay empty.
 
 Nginx CIS v3.0.0 gap table:
 
@@ -239,7 +258,6 @@ Nginx CIS v3.0.0 gap table:
 | §2.3.1-§2.3.3 | `host-depth` | Ownership, permissions, and PID-file checks require filesystem metadata. |
 | §2.4.1 | `research` | Authorized listening ports require an environment-specific approved-port policy. |
 | §2.4.2 | `direct-rule` | Add a local rule for rejecting unknown host names, for example default-server handling and explicit rejection behavior. |
-| §2.4.3, §2.4.4 | `direct-rule` | Current timeout rules check directive presence only; add value parsing for non-zero values at or below the benchmark limit. |
 | §2.5.2 | `probe-depth` | Default error and index page content needs response-body probing or filesystem content inspection. |
 | §2.5.4 | `parser-depth` | Reverse-proxy disclosure checks need proxy-header semantics beyond the current generic header rules. |
 | §3.1 | `direct-rule` | Current `log_format` coverage is presence-only; add detailed field validation if we want full CIS coverage. |
@@ -252,11 +270,10 @@ Nginx CIS v3.0.0 gap table:
 | §4.1.6 | `research` | TLS 1.3 Diffie-Hellman awareness is mostly operational guidance; define a scanner signal before adding a rule. |
 | §4.1.7 | `direct-rule` | Current OCSP stapling rules only cover resolver/verify when stapling is already enabled; add missing-`ssl_stapling on` coverage. |
 | §4.1.9, §4.1.10 | `parser-depth` | Upstream TLS client-certificate and upstream trust checks need proxy SSL directive modeling. |
-| §4.1.11 | `direct-rule` | Add session resumption checks for directives such as session cache and session ticket policy. |
 | §4.1.12 | `research` | HTTP/3 configuration is version/build dependent; define supported directive signals before mapping it. |
 | §5.1.1 | `direct-rule` | Existing sensitive-location access checks are partial; full coverage needs IP-focused `allow`/`deny` policy validation. |
 | §5.1.2 | `direct-rule` | Existing method checks are scoped to sensitive/upload-like locations; full coverage needs an approved-method policy model. |
-| §5.2.1-§5.2.5 | `direct-rule` | Current request-limit rules mostly check presence; add value/key/rate validation for full CIS coverage, including §5.2.3 URI buffer sizing. |
+| §5.2.4-§5.2.5 | `direct-rule` | Current connection/rate-limit rules mostly check presence; add per-IP key, numeric limit, and rate-policy validation for full CIS coverage. |
 | §5.3.2, §5.3.3 | `direct-rule` | Existing CSP and Referrer-Policy checks are presence-only; add value-quality checks for full CIS coverage. |
 | §6 | `out-of-scope` | The benchmark reserves Mandatory Access Control and points to OS/IdP/application sources rather than an Nginx config check. |
 
@@ -781,7 +798,7 @@ only where the mapping is honest:
 Progress:
 
 - [x] Universal rules (11)
-- [x] Nginx local rules (41) — CWE/OWASP filled; CIS existing-rule reference
+- [x] Nginx local rules (48) — CWE/OWASP filled; CIS existing-rule reference
   pass complete
 - [x] Apache local rules (27) — CWE/OWASP filled; CIS existing-rule reference
   pass complete

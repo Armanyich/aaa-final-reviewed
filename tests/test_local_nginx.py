@@ -1,6 +1,8 @@
 import threading
 from pathlib import Path
 
+import pytest
+
 from webconf_audit.local.load_context import LoadContext
 from webconf_audit.local.nginx import analyze_nginx_config
 from webconf_audit.local.nginx.include import resolve_includes
@@ -2730,6 +2732,305 @@ def test_analyze_nginx_config_does_not_report_missing_client_max_body_size_when_
     assert result.issues == []
     assert not any(
         finding.rule_id == "nginx.missing_client_max_body_size" for finding in result.findings
+    )
+
+
+_TIMEOUT_RULE_IDS = frozenset(
+    {
+        "nginx.client_body_timeout_too_high",
+        "nginx.client_header_timeout_too_high",
+        "nginx.send_timeout_too_high",
+        "nginx.keepalive_timeout_too_high",
+    }
+)
+
+
+@pytest.mark.parametrize(
+    ("config", "expected_present", "expected_absent"),
+    [
+        pytest.param(
+            "http {\n"
+            "    client_body_timeout 60s;\n"
+            "    client_header_timeout 25s;\n"
+            "    send_timeout 60s;\n"
+            "    keepalive_timeout 65s;\n"
+            "    server {\n"
+            "        listen 80;\n"
+            "    }\n"
+            "}\n",
+            _TIMEOUT_RULE_IDS,
+            frozenset(),
+            id="above-cis-limits-in-http",
+        ),
+        pytest.param(
+            "server {\n"
+            "    listen 80;\n"
+            "    client_body_timeout 0;\n"
+            "    client_header_timeout 0s;\n"
+            "    send_timeout 0;\n"
+            "    keepalive_timeout 0;\n"
+            "}\n",
+            _TIMEOUT_RULE_IDS,
+            frozenset(),
+            id="zero-values-in-server",
+        ),
+        pytest.param(
+            "server {\n"
+            "    listen 80;\n"
+            "    client_body_timeout 20s;\n"
+            "    client_header_timeout 20s;\n"
+            "    send_timeout 10s;\n"
+            "    keepalive_timeout 10s;\n"
+            "}\n",
+            frozenset(),
+            _TIMEOUT_RULE_IDS,
+            id="at-cis-limits-in-server",
+        ),
+    ],
+)
+def test_analyze_nginx_config_timeout_value_matrix(
+    tmp_path: Path,
+    config: str,
+    expected_present: frozenset[str],
+    expected_absent: frozenset[str],
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(config, encoding="utf-8")
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    rule_ids = {finding.rule_id for finding in result.findings}
+    assert expected_present <= rule_ids
+    assert rule_ids.isdisjoint(expected_absent)
+
+
+def test_analyze_nginx_config_ignores_high_client_body_timeout_inside_location(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n"
+        "    listen 80;\n"
+        "    client_body_timeout 10s;\n"
+        "    location /upload {\n"
+        "        client_body_timeout 300s;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert not any(
+        finding.rule_id == "nginx.client_body_timeout_too_high"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_ignores_high_client_header_timeout_inside_location(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n"
+        "    listen 80;\n"
+        "    client_header_timeout 10s;\n"
+        "    location /api {\n"
+        "        client_header_timeout 300s;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert not any(
+        finding.rule_id == "nginx.client_header_timeout_too_high"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_reports_high_keepalive_timeout_inside_location(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n"
+        "    listen 80;\n"
+        "    keepalive_timeout 10s;\n"
+        "    location /api {\n"
+        "        keepalive_timeout 120s;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert any(
+        finding.rule_id == "nginx.keepalive_timeout_too_high"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_reports_high_send_timeout_inside_location(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n"
+        "    listen 80;\n"
+        "    send_timeout 10s;\n"
+        "    location /stream {\n"
+        "        send_timeout 300s;\n"
+        "    }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert any(
+        finding.rule_id == "nginx.send_timeout_too_high"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_reports_unlimited_client_max_body_size(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n    listen 80;\n    client_max_body_size 0;\n}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert any(
+        finding.rule_id == "nginx.client_max_body_size_unlimited"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_accepts_nonzero_client_max_body_size(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n    listen 80;\n    client_max_body_size 2m;\n}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert not any(
+        finding.rule_id == "nginx.client_max_body_size_unlimited"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_reports_disabled_ssl_session_tickets(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        _safe_server_block(
+            "listen 443 ssl;",
+            "ssl_certificate cert.pem;",
+            "ssl_certificate_key cert.key;",
+            "ssl_ciphers HIGH:!aNULL:!MD5;",
+            "ssl_prefer_server_ciphers on;",
+            "ssl_session_tickets off;",
+        ),
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert any(
+        finding.rule_id == "nginx.ssl_session_tickets_disabled"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_accepts_enabled_ssl_session_tickets(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        _safe_server_block(
+            "listen 443 ssl;",
+            "ssl_certificate cert.pem;",
+            "ssl_certificate_key cert.key;",
+            "ssl_ciphers HIGH:!aNULL:!MD5;",
+            "ssl_prefer_server_ciphers on;",
+            "ssl_session_tickets on;",
+        ),
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert not any(
+        finding.rule_id == "nginx.ssl_session_tickets_disabled"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_reports_restrictive_large_client_header_buffers(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n    listen 80;\n    large_client_header_buffers 2 1k;\n}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert any(
+        finding.rule_id == "nginx.large_client_header_buffers_too_restrictive"
+        for finding in result.findings
+    )
+
+
+def test_analyze_nginx_config_accepts_default_large_client_header_buffers(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "nginx.conf"
+    config_path.write_text(
+        "server {\n    listen 80;\n    large_client_header_buffers 4 8k;\n}\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_nginx_config(str(config_path))
+
+    assert isinstance(result, AnalysisResult)
+    assert result.issues == []
+    assert not any(
+        finding.rule_id == "nginx.large_client_header_buffers_too_restrictive"
+        for finding in result.findings
     )
 
 
