@@ -1169,6 +1169,19 @@ def _https_probe_with_headers(**overrides) -> ProbeAttempt:
     return ProbeAttempt(**defaults)
 
 
+def _http_probe_with_headers(**overrides) -> ProbeAttempt:
+    defaults = {
+        "target": ProbeTarget(scheme="http", host="example.com", port=80, path="/"),
+        "tcp_open": True,
+        "status_code": 200,
+        "reason_phrase": "OK",
+        "server_header": "nginx",
+        **_ALL_SECURITY_HEADERS,
+    }
+    defaults.update(overrides)
+    return ProbeAttempt(**defaults)
+
+
 def _http_redirect_probe(
     *,
     target: ProbeTarget | None = None,
@@ -1390,6 +1403,18 @@ def test_content_security_policy_missing_frame_ancestors_fires_when_absent(monke
     assert finding.severity == "low"
     assert finding.location.details is not None
     assert "Content-Security-Policy:" in finding.location.details
+
+
+def test_content_security_policy_frame_ancestors_does_not_fire_on_http(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _http_probe_with_headers(content_security_policy_header="default-src 'self'"),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_missing_frame_ancestors" not in {
+        f.rule_id for f in result.findings
+    }
 
 
 def test_content_security_policy_frame_ancestors_does_not_fire_when_present(
