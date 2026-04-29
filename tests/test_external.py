@@ -1407,6 +1407,21 @@ def test_content_security_policy_frame_ancestors_does_not_fire_when_present(
     }
 
 
+def test_content_security_policy_empty_frame_ancestors_still_fires(
+    monkeypatch,
+) -> None:
+    probe_attempts = [
+        _https_probe_with_headers(
+            content_security_policy_header="default-src 'self'; frame-ancestors;"
+        ),
+        _http_redirect_probe(),
+    ]
+    result = _analyze_with_probe_attempts(monkeypatch, probe_attempts)
+    assert "external.content_security_policy_missing_frame_ancestors" in {
+        f.rule_id for f in result.findings
+    }
+
+
 def test_content_security_policy_missing_does_not_also_fire_frame_ancestors(
     monkeypatch,
 ) -> None:

@@ -153,14 +153,16 @@ def _find_content_security_policy_missing(probe_attempts: list["ProbeAttempt"]) 
     return findings
 
 
-def _content_security_policy_directives(header_value: str) -> set[str]:
-    directives: set[str] = set()
+def _content_security_policy_directives(header_value: str) -> dict[str, str]:
+    directives: dict[str, str] = {}
     for part in header_value.replace(",", ";").split(";"):
         stripped = part.strip()
         if not stripped:
             continue
-        directive_name = stripped.split(None, 1)[0].lower()
-        directives.add(directive_name)
+        directive_parts = stripped.split(None, 1)
+        directive_name = directive_parts[0].lower()
+        directive_value = directive_parts[1].strip() if len(directive_parts) > 1 else ""
+        directives.setdefault(directive_name, directive_value)
     return directives
 
 
@@ -173,9 +175,10 @@ def _find_content_security_policy_missing_frame_ancestors(
         if attempt.content_security_policy_header is None:
             continue
 
-        if "frame-ancestors" in _content_security_policy_directives(
+        frame_ancestors = _content_security_policy_directives(
             attempt.content_security_policy_header
-        ):
+        ).get("frame-ancestors")
+        if frame_ancestors:
             continue
 
         findings.append(

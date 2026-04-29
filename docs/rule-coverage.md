@@ -711,6 +711,12 @@ Mapping rationale (external probes), grouped by pattern:
 - **Hardening response headers**
   (`x_frame_options_missing`, `x_frame_options_invalid`) -- CWE-1021
   (clickjacking protection failure);
+  (`external.content_security_policy_missing_frame_ancestors`) --
+  `frame-ancestors` is the CSP control that restricts which parent documents
+  can embed the application. When an observed CSP omits this directive, the
+  application can still be framed by unrelated origins, increasing
+  clickjacking risk; this maps to CWE-1021, OWASP A05:2021, and ASVS
+  v5.0.0-3.4.6;
   (`x_content_type_options_missing/invalid`,
   `content_security_policy_missing`,
   `content_security_policy_unsafe_inline`,
@@ -778,7 +784,7 @@ Progress:
 - [x] Lighttpd local rules (15)
 - [x] IIS local rules (20) — CWE/OWASP/ASVS filled; CIS existing-rule reference
   pass complete
-- [x] External (probe) rules (69) — CWE/OWASP filled; CIS not applicable (probes)
+- [x] External (probe) rules (70) — CWE/OWASP filled; CIS not applicable (probes)
 - [x] ASVS 5.0.0 first-pass references for reviewed direct/partial candidates
 
 Stage 2 step 3 is complete for CWE / OWASP Top 10. This file is already the
