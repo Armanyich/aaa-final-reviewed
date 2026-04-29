@@ -29,13 +29,13 @@ file.
 
 ## Summary
 
-Total rules: **184**
+Total rules: **186**
 
 | Dimension | Counts |
 | --- | --- |
-| Category | local (103), external (70), universal (11) |
-| Severity | high (12), medium (61), low (100), info (11) |
-| Input kind | ast (69), probe (70), effective (27), normalized (11), htaccess (6), mixed (1) |
+| Category | local (103), external (72), universal (11) |
+| Severity | high (12), medium (61), low (102), info (11) |
+| Input kind | ast (69), probe (72), effective (27), normalized (11), htaccess (6), mixed (1) |
 
 ## Inventory tables
 
@@ -587,7 +587,7 @@ IIS CIS v1.2.1 / Windows source-of-truth gap table:
 
 ### External (Probe-based)
 
-Count: 70
+Count: 72
 
 Stage 2 step 3 mapping: **CWE / OWASP complete** for this group. The CIS
 column is empty across the whole group on purpose: external probes are
@@ -628,6 +628,8 @@ permissive 302 redirects, OPTIONS responses) leave CWE, OWASP, and ASVS empty.
 | `external.content_security_policy_unsafe_inline` | medium | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.3 (partial: missing/unsafe checks only) | - |
 | `external.content_security_policy_unsafe_eval` | medium | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.3 (partial: missing/unsafe checks only) | - |
 | `external.content_security_policy_missing_frame_ancestors` | low | probe | - | [CWE-1021](https://cwe.mitre.org/data/definitions/1021.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.6 | - |
+| `external.content_security_policy_object_src_not_none` | low | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.3 (partial: object-src minimum quality) | - |
+| `external.content_security_policy_base_uri_not_restricted` | low | probe | - | [CWE-693](https://cwe.mitre.org/data/definitions/693.html) | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.3 (partial: base-uri minimum quality) | - |
 | `external.referrer_policy_missing` | info | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.5 | - |
 | `external.referrer_policy_unsafe` | low | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | ASVS v5.0.0-3.4.5 | - |
 | `external.permissions_policy_missing` | info | probe | - | - | [A05:2021](https://owasp.org/Top10/A05_2021-Security_Misconfiguration/) | - | - |
@@ -721,6 +723,8 @@ Mapping rationale (external probes), grouped by pattern:
   `content_security_policy_missing`,
   `content_security_policy_unsafe_inline`,
   `content_security_policy_unsafe_eval`,
+  `external.content_security_policy_object_src_not_none`,
+  `external.content_security_policy_base_uri_not_restricted`,
   `coep_missing`, `coop_missing`, `corp_missing`) -- CWE-693 (protection
   mechanism failure) because the protection control is absent or
   weakened. OWASP A05.
@@ -784,7 +788,7 @@ Progress:
 - [x] Lighttpd local rules (15)
 - [x] IIS local rules (20) — CWE/OWASP/ASVS filled; CIS existing-rule reference
   pass complete
-- [x] External (probe) rules (70) — CWE/OWASP filled; CIS not applicable (probes)
+- [x] External (probe) rules (72) — CWE/OWASP filled; CIS not applicable (probes)
 - [x] ASVS 5.0.0 first-pass references for reviewed direct/partial candidates
 
 Stage 2 step 3 is complete for CWE / OWASP Top 10. This file is already the
