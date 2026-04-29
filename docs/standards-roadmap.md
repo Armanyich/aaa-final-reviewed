@@ -37,14 +37,14 @@ Sources checked on 2026-04-28:
   unsupported or archived IIS benchmarks as non-authoritative unless a future
   task explicitly scopes them.
 
-The current project inventory is 183 rules:
+The current project inventory is 184 rules:
 
 - Universal: 11
 - Nginx local: 41
 - Apache local: 27
 - Lighttpd local: 15
 - IIS local: 20
-- External probes: 69
+- External probes: 70
 
 Stage 2 step 3 is complete for CWE and OWASP Top 10 mapping. Confirmed direct
 and partial ASVS candidates are now copied into the dedicated `ASVS` column in
@@ -311,9 +311,9 @@ until the listed follow-up exists:
   unsafe-inline / unsafe-eval. Add checks for `object-src 'none'`, `base-uri
   'none'`, nonce/hash usage, and per-response policy only after deciding how
   strict the external probe should be.
-- `v5.0.0-3.4.6` - ASVS prefers CSP `frame-ancestors`; current X-Frame-Options
-  checks are useful but not an exact ASVS 5.0.0 match. Add local/external
-  `frame-ancestors` checks before claiming full coverage.
+- `v5.0.0-3.4.6` - ASVS prefers CSP `frame-ancestors`; the external probe
+  now checks observed CSP responses, while local config rules still need
+  follow-up before claiming full coverage across server families.
 - `v5.0.0-3.4.7` - CSP reporting endpoint is not checked today. Add a direct
   runtime rule for `report-uri` / `report-to` if we decide this is valuable.
 - `v5.0.0-3.5.1` through `v5.0.0-3.5.3` - CSRF and safe-method semantics are
@@ -355,7 +355,7 @@ standard section before implementation.
 | STD-GAP-010 | IIS legacy CIS | research | P3 | Source decision recorded: unsupported CIS IIS 7/8 archive PDFs are historical context only and must not be primary references unless a future PR explicitly scopes legacy IIS. |
 | STD-GAP-011 | External probes | covered | P1 | First-pass ASVS references are copied into the dedicated `ASVS` column for observable runtime behavior: TLS protocol negotiation, weak cipher negotiation, certificate validity, security headers, dangerous methods, and exposed sensitive files. Deeper probe work remains in `STD-GAP-014`. |
 | STD-GAP-012 | Standards output | direct-rule | P2 | Add typed standards metadata to rule registry entries, include standards references in JSON output, and add optional text report grouping by standard without changing rule behavior. |
-| STD-GAP-013 | ASVS 5.0.0 | direct-rule | P2 | Add CSP quality probes for `frame-ancestors`, `object-src`, `base-uri`, and reporting directives after deciding the desired strictness. |
+| STD-GAP-013 | ASVS 5.0.0 | direct-rule | P2 | Add remaining CSP quality probes for `object-src`, `base-uri`, and reporting directives after deciding the desired strictness. External `frame-ancestors` coverage is now present. |
 | STD-GAP-014 | ASVS 5.0.0 | probe-depth | P3 | Extend TLS probing for forward secrecy, cipher preference, OCSP stapling, and ECH before claiming deeper V12 coverage. |
 
 ## PR Slicing
